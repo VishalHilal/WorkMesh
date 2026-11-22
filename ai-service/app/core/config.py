@@ -10,5 +10,8 @@ class Settings(BaseSettings):
     environment: str = "development"
     port: int = 8000
 
+    # Database — required in Phase 3+
+    database_url: str = ""
+
 
 settings = Settings()
