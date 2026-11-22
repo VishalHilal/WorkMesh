@@ -1,0 +1,42 @@
+name: Task
+description: Chore, refactor, CI change, documentation, or other non-feature work
+labels: ["task"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this for maintenance work, configuration, CI changes, or documentation.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: What needs to be done
+      description: Clear description of the task.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reason
+    attributes:
+      label: Why
+      description: Why is this task needed now?
+    validations:
+      required: true
+
+  - type: textarea
+    id: done
+    attributes:
+      label: Done when
+      description: How will we know this task is complete?
+      placeholder: |
+        - [ ] ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes
+      description: Any additional context, links, or references.
+    validations:
+      required: false

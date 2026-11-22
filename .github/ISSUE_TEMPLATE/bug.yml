@@ -1,0 +1,57 @@
+name: Bug
+description: Something is not working as expected
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Provide enough detail to reproduce the bug and understand the expected behaviour.
+        Do not include secrets, tokens, or real customer data.
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Exact steps to trigger the bug.
+      placeholder: |
+        1. Go to ...
+        2. Click ...
+        3. See error ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behaviour
+      description: What should have happened?
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behaviour
+      description: What actually happened? Include relevant error messages or logs (no secrets).
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Node version, Python version, OS, browser if relevant.
+      placeholder: |
+        - Node: v24.x
+        - Python: 3.12.x
+        - OS: Windows 11
+    validations:
+      required: false
+
+  - type: textarea
+    id: regression-test
+    attributes:
+      label: Regression test plan
+      description: What test will be added to prevent this from coming back?
+    validations:
+      required: false
