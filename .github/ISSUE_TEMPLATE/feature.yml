@@ -1,0 +1,64 @@
+name: Feature
+description: A new user-visible capability or service functionality
+labels: ["feature"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template for new features. Fill in every section before starting work.
+
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+      description: What problem does this solve? What outcome do we want?
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Acceptance criteria
+      description: Specific, testable conditions that must be true for this issue to be done.
+      placeholder: |
+        - [ ] ...
+        - [ ] ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope and non-goals
+      description: What is explicitly in scope? What are we NOT doing in this issue?
+    validations:
+      required: true
+
+  - type: textarea
+    id: api-schema
+    attributes:
+      label: API or schema changes
+      description: List any new or changed endpoints, request/response shapes, or database schema.
+      placeholder: None, or describe changes here.
+    validations:
+      required: true
+
+  - type: textarea
+    id: test-expectations
+    attributes:
+      label: Test expectations
+      description: What tests will be added or updated?
+      placeholder: |
+        - Unit test for ...
+        - API test covering ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: security
+    attributes:
+      label: Security and company-scope implications
+      description: Does this touch authentication, authorization, company scoping, file uploads, or external data?
+      placeholder: None, or describe implications here.
+    validations:
+      required: true
