@@ -43,6 +43,8 @@ jobs:
     runs-on: ubuntu-latest
     env:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/workmesh
+      JWT_ACCESS_SECRET: workmesh_ci_test_jwt_secret_key_32chars!
+      JWT_ACCESS_EXPIRES_IN: 15m
     defaults:
       run:
         working-directory: backend

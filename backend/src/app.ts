@@ -2,6 +2,7 @@ import express from 'express'
 import cors from 'cors'
 import helmet from 'helmet'
 import { healthRouter } from './routes/health.routes.js'
+import { authRouter } from './routes/auth.routes.js'
 import { errorMiddleware } from './middleware/error.middleware.js'
 
 const app = express()
@@ -12,6 +13,7 @@ app.use(express.json())
 
 // Routes
 app.use('/api/v1/health', healthRouter)
+app.use('/api/v1/auth', authRouter)
 
 // 404 handler
 app.use((_req, res) => {

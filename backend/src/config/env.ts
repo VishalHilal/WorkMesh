@@ -5,6 +5,11 @@ const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().positive().default(4000),
   DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
+  JWT_ACCESS_SECRET: z
+    .string()
+    .min(16, 'JWT_ACCESS_SECRET must be at least 16 characters')
+    .default('workmesh_dev_jwt_access_secret_32chars_long!'),
+  JWT_ACCESS_EXPIRES_IN: z.string().default('15m'),
 })
 
 const parsed = envSchema.safeParse(process.env)
