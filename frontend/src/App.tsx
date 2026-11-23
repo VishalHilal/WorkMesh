@@ -1,28 +1,41 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, Link } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context'
 import { ProtectedRoute } from './components/ProtectedRoute'
+import { AdminRoute } from './components/AdminRoute'
 import { LoginPage } from './features/auth/LoginPage'
+import { UserManagementPage } from './features/users/UserManagementPage'
 import './App.css'
 
 function DashboardShell() {
   const { user, logout } = useAuth()
+  const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN'
 
   return (
     <main className="application-shell">
       <section aria-labelledby="workmesh-heading">
         <div className="flex items-center justify-between mb-4">
           <p className="eyebrow m-0">WorkMesh AI</p>
-          <button
-            onClick={logout}
-            className="text-sm font-medium text-slate-600 hover:text-indigo-600 transition-colors cursor-pointer"
-          >
-            Sign out
-          </button>
+          <div className="flex items-center gap-4">
+            {isAdmin && (
+              <Link
+                to="/admin/users"
+                className="text-sm font-semibold text-indigo-600 hover:text-indigo-500"
+              >
+                Manage Employees →
+              </Link>
+            )}
+            <button
+              onClick={logout}
+              className="text-sm font-medium text-slate-600 hover:text-indigo-600 transition-colors cursor-pointer"
+            >
+              Sign out
+            </button>
+          </div>
         </div>
         <h1 id="workmesh-heading">Your company workspace, connected.</h1>
         <p className="description">
-          Welcome back, {user?.firstName ?? 'Employee'}. The employee productivity workspace is
-          ready.
+          Welcome back, {user?.firstName ?? 'Employee'} ({user?.role?.replace('_', ' ')}). The
+          employee productivity workspace is ready.
         </p>
       </section>
     </main>
@@ -40,6 +53,16 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <DashboardShell />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/users"
+            element={
+              <ProtectedRoute>
+                <AdminRoute>
+                  <UserManagementPage />
+                </AdminRoute>
               </ProtectedRoute>
             }
           />
