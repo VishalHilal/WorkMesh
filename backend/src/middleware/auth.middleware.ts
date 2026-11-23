@@ -51,3 +51,11 @@ export function authenticate(req: Request, res: Response, next: NextFunction): v
     })
   }
 }
+
+export function getAuthenticatedCompanyId(req: Request): string {
+  if (!req.user?.companyId) {
+    throw new Error('Unauthenticated request: companyId is not present on request context.')
+  }
+  return req.user.companyId
+}
+

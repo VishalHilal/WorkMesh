@@ -3,6 +3,8 @@ import { z } from 'zod'
 import rateLimit from 'express-rate-limit'
 import { prisma } from '../lib/db.js'
 import { verifyPassword, signAccessToken } from '../lib/auth.js'
+import { authenticate, getAuthenticatedCompanyId } from '../middleware/auth.middleware.js'
+import { requireRole } from '../middleware/role.middleware.js'
 
 const authRouter = Router()
 
@@ -112,6 +114,44 @@ authRouter.post('/login', loginLimiter, async (req, res, next) => {
   } catch (error) {
     next(error)
   }
+})
+
+// Current user profile route — requires authentication
+authRouter.get('/me', authenticate, (req, res) => {
+  res.status(200).json({
+    data: { user: req.user },
+    meta: { timestamp: new Date().toISOString() },
+  })
+})
+
+// Admin-only route — requires authentication + ADMIN or SUPER_ADMIN role
+authRouter.get('/admin-only', authenticate, requireRole('ADMIN', 'SUPER_ADMIN'), (_req, res) => {
+  res.status(200).json({
+    data: { message: 'Admin access granted.' },
+    meta: { timestamp: new Date().toISOString() },
+  })
+})
+
+// Company-scoped route — demonstrates strict isolation preventing cross-tenant access
+authRouter.get('/company-resource/:targetCompanyId', authenticate, (req, res) => {
+  const companyId = getAuthenticatedCompanyId(req)
+  const { targetCompanyId } = req.params
+
+  if (companyId !== targetCompanyId) {
+    res.status(403).json({
+      error: {
+        code: 'FORBIDDEN',
+        message: 'Cross-company access denied. You do not have access to this company resource.',
+      },
+      meta: { timestamp: new Date().toISOString() },
+    })
+    return
+  }
+
+  res.status(200).json({
+    data: { companyId, message: 'Company resource access granted.' },
+    meta: { timestamp: new Date().toISOString() },
+  })
 })
 
 export { authRouter }
