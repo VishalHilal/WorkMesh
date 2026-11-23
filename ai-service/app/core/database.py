@@ -17,10 +17,12 @@ def get_engine():
 
 def check_db_connection() -> bool:
     """Return True if the database is reachable, False otherwise."""
+    if not settings.database_url:
+        return False
     try:
         engine = get_engine()
         with Session(engine) as session:
             session.execute(text("SELECT 1"))
         return True
-    except SQLAlchemyError:
+    except (SQLAlchemyError, OSError):
         return False
