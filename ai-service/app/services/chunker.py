@@ -34,14 +34,17 @@ def chunk_text(
 
     # Split hierarchy: double newline -> single newline -> period+space -> space
     separators = ["\n\n", "\n", ". ", " "]
-    
+
     def recursive_split(subtext: str, sep_idx: int) -> list[str]:
         if len(subtext) <= chunk_size:
             return [subtext] if subtext.strip() else []
 
         if sep_idx >= len(separators):
             # Base case: hard split by character
-            return [subtext[i:i + chunk_size] for i in range(0, len(subtext), chunk_size - chunk_overlap)]
+            return [
+                subtext[i : i + chunk_size]
+                for i in range(0, len(subtext), chunk_size - chunk_overlap)
+            ]
 
         sep = separators[sep_idx]
         parts = subtext.split(sep)
@@ -82,10 +85,12 @@ def chunk_text(
             if overlap_text and not content.startswith(overlap_text):
                 content = f"{overlap_text} ... {content}"
 
-        chunks.append({
-            "chunk_index": len(chunks),
-            "content": content,
-            "token_count": estimate_tokens(content),
-        })
+        chunks.append(
+            {
+                "chunk_index": len(chunks),
+                "content": content,
+                "token_count": estimate_tokens(content),
+            }
+        )
 
     return chunks

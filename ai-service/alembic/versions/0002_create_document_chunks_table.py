@@ -5,6 +5,7 @@ Revises: 0001
 Create Date: 2026-11-24 12:00:00.000000
 
 """
+
 from collections.abc import Sequence
 
 import sqlalchemy as sa
@@ -32,9 +33,13 @@ def upgrade() -> None:
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
         sa.PrimaryKeyConstraint("id"),
     )
-    op.create_index("ix_document_chunks_document_id", "document_chunks", ["document_id"])
+    op.create_index(
+        "ix_document_chunks_document_id", "document_chunks", ["document_id"]
+    )
     op.create_index("ix_document_chunks_company_id", "document_chunks", ["company_id"])
-    op.create_index("ix_chunks_company_document", "document_chunks", ["company_id", "document_id"])
+    op.create_index(
+        "ix_chunks_company_document", "document_chunks", ["company_id", "document_id"]
+    )
     op.execute(
         "CREATE INDEX IF NOT EXISTS ix_document_chunks_embedding ON document_chunks USING hnsw (embedding vector_cosine_ops)"
     )

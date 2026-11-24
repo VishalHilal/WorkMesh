@@ -17,7 +17,9 @@ config = context.config
 # Set sqlalchemy.url from environment variable BEFORE reading config sections
 database_url = os.environ.get("DATABASE_URL", "")
 if not database_url:
-    raise RuntimeError("DATABASE_URL environment variable is not set. Cannot run migrations.")
+    raise RuntimeError(
+        "DATABASE_URL environment variable is not set. Cannot run migrations."
+    )
 config.set_main_option("sqlalchemy.url", database_url)
 
 # Interpret the config file for Python logging

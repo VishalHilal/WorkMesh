@@ -31,7 +31,9 @@ def ingest_document(payload: IngestRequest) -> IngestResponse:
     try:
         with Session(engine) as session:
             session.execute(
-                text('UPDATE documents SET status = \'PROCESSING\', "updatedAt" = NOW() WHERE id = :id'),
+                text(
+                    "UPDATE documents SET status = 'PROCESSING', \"updatedAt\" = NOW() WHERE id = :id"
+                ),
                 {"id": payload.document_id},
             )
             session.commit()
@@ -52,7 +54,9 @@ def ingest_document(payload: IngestRequest) -> IngestResponse:
             # Handle empty documents gracefully
             with Session(engine) as session:
                 session.execute(
-                    text('UPDATE documents SET status = \'READY\', "chunkCount" = 0, "updatedAt" = NOW() WHERE id = :id'),
+                    text(
+                        'UPDATE documents SET status = \'READY\', "chunkCount" = 0, "updatedAt" = NOW() WHERE id = :id'
+                    ),
                     {"id": payload.document_id},
                 )
                 session.commit()
@@ -74,7 +78,9 @@ def ingest_document(payload: IngestRequest) -> IngestResponse:
         # 6. Bulk insert chunks into PostgreSQL with pgvector within a single transaction
         with Session(engine) as session:
             # Remove existing chunks for this document (ensures idempotency on re-ingestion)
-            session.query(DocumentChunk).filter(DocumentChunk.document_id == payload.document_id).delete()
+            session.query(DocumentChunk).filter(
+                DocumentChunk.document_id == payload.document_id
+            ).delete()
 
             for chunk_data, emb in zip(chunks, embeddings, strict=True):
                 chunk_record = DocumentChunk(
