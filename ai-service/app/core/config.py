@@ -32,5 +32,10 @@ class Settings(BaseSettings):
     embedding_model_name: str = "all-MiniLM-L6-v2"
     embedding_dimension: int = 384
 
+    # Google Gemini LLM configuration
+    gemini_api_key: str = ""
+    gemini_model: str = "gemini-3.8-flash"
+    gemini_api_base_url: str = "https://generativelanguage.googleapis.com/v1beta"
+
 
 settings = Settings()
