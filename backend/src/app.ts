@@ -14,6 +14,21 @@ app.use(cors())
 app.use(express.json())
 
 // Routes
+app.get('/', (_req, res) => {
+  res.status(200).json({
+    status: 'ok',
+    message: 'WorkMesh API Server is running.',
+    version: '1.0.0',
+    endpoints: {
+      health: '/api/v1/health',
+      auth: '/api/v1/auth',
+      documents: '/api/v1/documents',
+      users: '/api/v1/users',
+    },
+    meta: { timestamp: new Date().toISOString() },
+  })
+})
+
 app.use('/api/v1/health', healthRouter)
 app.use('/api/v1/auth', authRouter)
 app.use('/api/v1/users', usersRouter)
