@@ -8,14 +8,15 @@ client = TestClient(app)
 
 
 def test_ingest_document_endpoint():
-    mock_file_content = b"WorkMesh Technologies Code of Conduct.\nEmployees must act with integrity."
+    mock_file_content = (
+        b"WorkMesh Technologies Code of Conduct.\nEmployees must act with integrity."
+    )
 
     with (
         patch("app.api.ingest.download_object", return_value=mock_file_content),
         patch("app.api.ingest.get_engine"),
         patch("app.api.ingest.Session"),
     ):
-
         payload = {
             "document_id": "doc_test_123",
             "company_id": "company_test_abc",

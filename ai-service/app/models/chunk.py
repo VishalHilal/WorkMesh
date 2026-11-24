@@ -11,7 +11,9 @@ from app.core.database import Base
 class DocumentChunk(Base):
     __tablename__ = "document_chunks"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    id: Mapped[str] = mapped_column(
+        String(36), primary_key=True, default=lambda: str(uuid.uuid4())
+    )
     document_id: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
     company_id: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
     chunk_index: Mapped[int] = mapped_column(Integer, nullable=False)
@@ -24,6 +26,4 @@ class DocumentChunk(Base):
         nullable=False,
     )
 
-    __table_args__ = (
-        Index("ix_chunks_company_document", "company_id", "document_id"),
-    )
+    __table_args__ = (Index("ix_chunks_company_document", "company_id", "document_id"),)

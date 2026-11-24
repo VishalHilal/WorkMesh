@@ -39,4 +39,6 @@ def parse_document(file_name: str, content: bytes) -> str:
     elif ext == ".txt":
         return extract_text_from_txt(content)
     else:
-        raise ValueError(f"Unsupported file type: {ext}. Only PDF, DOCX, and TXT are supported.")
+        raise ValueError(
+            f"Unsupported file type: {ext}. Only PDF, DOCX, and TXT are supported."
+        )
