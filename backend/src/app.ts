@@ -4,6 +4,7 @@ import helmet from 'helmet'
 import { healthRouter } from './routes/health.routes.js'
 import { authRouter } from './routes/auth.routes.js'
 import { usersRouter } from './routes/user.routes.js'
+import { documentsRouter } from './routes/document.routes.js'
 import { errorMiddleware } from './middleware/error.middleware.js'
 
 const app = express()
@@ -16,6 +17,7 @@ app.use(express.json())
 app.use('/api/v1/health', healthRouter)
 app.use('/api/v1/auth', authRouter)
 app.use('/api/v1/users', usersRouter)
+app.use('/api/v1/documents', documentsRouter)
 
 // 404 handler
 app.use((_req, res) => {
