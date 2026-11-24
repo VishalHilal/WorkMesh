@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 
 from app.api.health import router as health_router
+from app.api.ingest import router as ingest_router
 from app.core.config import settings
 
 app = FastAPI(
@@ -11,6 +12,7 @@ app = FastAPI(
 )
 
 app.include_router(health_router, prefix="/api/v1/health", tags=["health"])
+app.include_router(ingest_router, prefix="/api/v1", tags=["ingest"])
 
 
 @app.get("/")

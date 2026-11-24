@@ -134,6 +134,21 @@ documentsRouter.post('/upload', handleUploadMiddleware, async (req: Request, res
       },
     })
 
+    // Trigger AI service ingestion asynchronously in the background
+    const aiServiceUrl = process.env.AI_SERVICE_URL || 'http://localhost:8000'
+    fetch(`${aiServiceUrl}/api/v1/ingest`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        document_id: document.id,
+        company_id: companyId,
+        storage_key: storageKey,
+        file_name: req.file.originalname,
+      }),
+    }).catch(() => {
+      // Non-blocking trigger — failure to reach AI service won't fail the upload response
+    })
+
     res.status(201).json({
       data: document,
       meta: { timestamp: new Date().toISOString() },
