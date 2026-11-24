@@ -4,6 +4,7 @@ import { ProtectedRoute } from './components/ProtectedRoute'
 import { AdminRoute } from './components/AdminRoute'
 import { LoginPage } from './features/auth/LoginPage'
 import { UserManagementPage } from './features/users/UserManagementPage'
+import { DocumentManagementPage } from './features/documents/DocumentManagementPage'
 import './App.css'
 
 function DashboardShell() {
@@ -16,6 +17,12 @@ function DashboardShell() {
         <div className="flex items-center justify-between mb-4">
           <p className="eyebrow m-0">WorkMesh AI</p>
           <div className="flex items-center gap-4">
+            <Link
+              to="/documents"
+              className="text-sm font-semibold text-indigo-600 hover:text-indigo-500"
+            >
+              Documents →
+            </Link>
             {isAdmin && (
               <Link
                 to="/admin/users"
@@ -53,6 +60,14 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <DashboardShell />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/documents"
+            element={
+              <ProtectedRoute>
+                <DocumentManagementPage />
               </ProtectedRoute>
             }
           />
