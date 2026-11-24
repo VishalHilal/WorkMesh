@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { MemoryRouter } from 'react-router-dom'
 import { DocumentManagementPage } from './DocumentManagementPage'
@@ -135,7 +135,7 @@ describe('DocumentManagementPage', () => {
   it('opens and closes the upload modal', async () => {
     renderWithProviders(<DocumentManagementPage />)
 
-    const uploadBtn = screen.getByRole('button', { name: /\+ Upload Document/i })
+    const uploadBtn = screen.getByRole('button', { name: /Upload Document/i })
     fireEvent.click(uploadBtn)
 
     expect(screen.getByRole('dialog', { name: 'Upload Document' })).toBeInTheDocument()
@@ -151,7 +151,7 @@ describe('DocumentManagementPage', () => {
   it('validates file type in upload modal', async () => {
     renderWithProviders(<DocumentManagementPage />)
 
-    fireEvent.click(screen.getByRole('button', { name: /\+ Upload Document/i }))
+    fireEvent.click(screen.getByRole('button', { name: /Upload Document/i }))
 
     const fileInput = screen.getByTestId('document-file-input')
     const invalidFile = new File(['image bytes'], 'image.png', { type: 'image/png' })
@@ -202,7 +202,7 @@ describe('DocumentManagementPage', () => {
 
     renderWithProviders(<DocumentManagementPage />)
 
-    fireEvent.click(screen.getByRole('button', { name: /\+ Upload Document/i }))
+    fireEvent.click(screen.getByRole('button', { name: /Upload Document/i }))
 
     const fileInput = screen.getByTestId('document-file-input')
     const validFile = new File(['%PDF content'], 'Annual_Report.pdf', {
@@ -214,7 +214,8 @@ describe('DocumentManagementPage', () => {
     const titleInput = screen.getByLabelText(/Document Title/i)
     fireEvent.change(titleInput, { target: { value: 'Annual Report' } })
 
-    const submitBtn = screen.getByRole('button', { name: 'Upload Document' })
+    const modal = screen.getByRole('dialog', { name: 'Upload Document' })
+    const submitBtn = within(modal).getByRole('button', { name: 'Upload Document' })
     fireEvent.click(submitBtn)
 
     await waitFor(() => {

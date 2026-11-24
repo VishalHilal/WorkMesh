@@ -146,7 +146,7 @@ describe('Document Upload and Management API', () => {
     } catch {
       isDbConnected = false
     }
-  })
+  }, 30000)
 
   afterAll(async () => {
     if (!isDbConnected) return
