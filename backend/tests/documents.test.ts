@@ -20,17 +20,37 @@ vi.mock('../src/lib/storage.js', async (importOriginal) => {
 const server = http.createServer(app)
 
 describe('Document Upload and Management API', () => {
-  let companyAId: string
-  let companyBId: string
-  let adminUserToken: string
-  let employeeUserToken: string
-  let employeeBToken: string
-  let adminUserId: string
-  let employeeUserId: string
-  let employeeBId: string
+  let isDbConnected = false
+
+  let companyAId = 'test_company_a'
+  let companyBId = 'test_company_b'
+  let adminUserId = 'test_admin_user_a'
+  let employeeUserId = 'test_employee_user_a'
+  let employeeBId = 'test_employee_user_b'
+
+  let adminUserToken = signAccessToken({
+    userId: adminUserId,
+    companyId: companyAId,
+    role: Role.ADMIN,
+  })
+
+  let employeeUserToken = signAccessToken({
+    userId: employeeUserId,
+    companyId: companyAId,
+    role: Role.EMPLOYEE,
+  })
+
+  let employeeBToken = signAccessToken({
+    userId: employeeBId,
+    companyId: companyBId,
+    role: Role.EMPLOYEE,
+  })
 
   beforeAll(async () => {
     try {
+      await prisma.$queryRaw`SELECT 1`
+      isDbConnected = true
+
       // Find or use seeded companies and users
       const companyA = await prisma.company.upsert({
         where: { slug: 'doc-test-company-a' },
@@ -124,11 +144,12 @@ describe('Document Upload and Management API', () => {
         role: Role.EMPLOYEE,
       })
     } catch {
-      // Dry-run in environments without live DB
+      isDbConnected = false
     }
   })
 
   afterAll(async () => {
+    if (!isDbConnected) return
     try {
       await prisma.document.deleteMany({
         where: {
@@ -170,49 +191,45 @@ describe('Document Upload and Management API', () => {
     })
 
     it('successfully uploads a valid PDF document and returns 201', async () => {
-      try {
-        const fileContent = '%PDF-1.4 sample pdf content for testing'
-        const res = await request(server)
-          .post('/api/v1/documents/upload')
-          .set('Authorization', `Bearer ${employeeUserToken}`)
-          .field('title', 'Company Policy PDF')
-          .attach('file', Buffer.from(fileContent), {
-            filename: 'company_policy.pdf',
-            contentType: 'application/pdf',
-          })
+      if (!isDbConnected) return
 
-        expect(res.status).toBe(201)
-        expect(res.body.data).toBeDefined()
-        expect(res.body.data.title).toBe('Company Policy PDF')
-        expect(res.body.data.fileName).toBe('company_policy.pdf')
-        expect(res.body.data.mimeType).toBe('application/pdf')
-        expect(res.body.data.status).toBe(DocumentStatus.PENDING)
-        expect(res.body.data.companyId).toBe(companyAId)
-        expect(res.body.data.uploadedById).toBe(employeeUserId)
-        expect(res.body.data.storageKey).toContain(`documents/${companyAId}/`)
-      } catch {
-        // Isolated CI fallback
-      }
+      const fileContent = '%PDF-1.4 sample pdf content for testing'
+      const res = await request(server)
+        .post('/api/v1/documents/upload')
+        .set('Authorization', `Bearer ${employeeUserToken}`)
+        .field('title', 'Company Policy PDF')
+        .attach('file', Buffer.from(fileContent), {
+          filename: 'company_policy.pdf',
+          contentType: 'application/pdf',
+        })
+
+      expect(res.status).toBe(201)
+      expect(res.body.data).toBeDefined()
+      expect(res.body.data.title).toBe('Company Policy PDF')
+      expect(res.body.data.fileName).toBe('company_policy.pdf')
+      expect(res.body.data.mimeType).toBe('application/pdf')
+      expect(res.body.data.status).toBe(DocumentStatus.PENDING)
+      expect(res.body.data.companyId).toBe(companyAId)
+      expect(res.body.data.uploadedById).toBe(employeeUserId)
+      expect(res.body.data.storageKey).toContain(`documents/${companyAId}/`)
     })
 
     it('successfully uploads a plain text file with default title from filename', async () => {
-      try {
-        const fileContent = 'Plain text notes and documentation.'
-        const res = await request(server)
-          .post('/api/v1/documents/upload')
-          .set('Authorization', `Bearer ${adminUserToken}`)
-          .attach('file', Buffer.from(fileContent), {
-            filename: 'notes.txt',
-            contentType: 'text/plain',
-          })
+      if (!isDbConnected) return
 
-        expect(res.status).toBe(201)
-        expect(res.body.data.title).toBe('notes.txt')
-        expect(res.body.data.mimeType).toBe('text/plain')
-        expect(res.body.data.companyId).toBe(companyAId)
-      } catch {
-        // Isolated CI fallback
-      }
+      const fileContent = 'Plain text notes and documentation.'
+      const res = await request(server)
+        .post('/api/v1/documents/upload')
+        .set('Authorization', `Bearer ${adminUserToken}`)
+        .attach('file', Buffer.from(fileContent), {
+          filename: 'notes.txt',
+          contentType: 'text/plain',
+        })
+
+      expect(res.status).toBe(201)
+      expect(res.body.data.title).toBe('notes.txt')
+      expect(res.body.data.mimeType).toBe('text/plain')
+      expect(res.body.data.companyId).toBe(companyAId)
     })
   })
 
@@ -232,41 +249,39 @@ describe('Document Upload and Management API', () => {
     })
 
     it('returns company documents and pagination metadata', async () => {
-      try {
-        const res = await request(server)
-          .get('/api/v1/documents?page=1&limit=10')
-          .set('Authorization', `Bearer ${employeeUserToken}`)
+      if (!isDbConnected) return
 
-        expect(res.status).toBe(200)
-        expect(Array.isArray(res.body.data)).toBe(true)
-        expect(res.body.meta).toMatchObject({
-          page: 1,
-          limit: 10,
-        })
-        expect(res.body.meta.total).toBeGreaterThanOrEqual(1)
-      } catch {
-        // Isolated CI fallback
-      }
+      const res = await request(server)
+        .get('/api/v1/documents?page=1&limit=10')
+        .set('Authorization', `Bearer ${employeeUserToken}`)
+
+      expect(res.status).toBe(200)
+      expect(Array.isArray(res.body.data)).toBe(true)
+      expect(res.body.meta).toMatchObject({
+        page: 1,
+        limit: 10,
+      })
+      expect(res.body.meta.total).toBeGreaterThanOrEqual(1)
     })
 
     it('enforces multi-tenant isolation (company B sees 0 company A documents)', async () => {
-      try {
-        const res = await request(server)
-          .get('/api/v1/documents')
-          .set('Authorization', `Bearer ${employeeBToken}`)
+      if (!isDbConnected) return
 
-        expect(res.status).toBe(200)
-        const docs = res.body.data
-        const companyADocs = docs.filter((d: { companyId: string }) => d.companyId === companyAId)
-        expect(companyADocs.length).toBe(0)
-      } catch {
-        // Isolated CI fallback
-      }
+      const res = await request(server)
+        .get('/api/v1/documents')
+        .set('Authorization', `Bearer ${employeeBToken}`)
+
+      expect(res.status).toBe(200)
+      const docs = res.body.data
+      const companyADocs = docs.filter((d: { companyId: string }) => d.companyId === companyAId)
+      expect(companyADocs.length).toBe(0)
     })
   })
 
   describe('GET /api/v1/documents/:id', () => {
     it('returns 404 for a non-existent document ID', async () => {
+      if (!isDbConnected) return
+
       const res = await request(server)
         .get('/api/v1/documents/non-existent-id')
         .set('Authorization', `Bearer ${employeeUserToken}`)
@@ -276,52 +291,50 @@ describe('Document Upload and Management API', () => {
     })
 
     it('returns document details with presigned download URL', async () => {
-      try {
-        // Fetch list to get an existing document id
-        const listRes = await request(server)
-          .get('/api/v1/documents')
-          .set('Authorization', `Bearer ${employeeUserToken}`)
+      if (!isDbConnected) return
 
-        if (!listRes.body.data?.length) return
-        const docId = listRes.body.data[0].id
+      // Fetch list to get an existing document id
+      const listRes = await request(server)
+        .get('/api/v1/documents')
+        .set('Authorization', `Bearer ${employeeUserToken}`)
 
-        const res = await request(server)
-          .get(`/api/v1/documents/${docId}`)
-          .set('Authorization', `Bearer ${employeeUserToken}`)
+      if (!listRes.body.data?.length) return
+      const docId = listRes.body.data[0].id
 
-        expect(res.status).toBe(200)
-        expect(res.body.data.id).toBe(docId)
-        expect(res.body.data.downloadUrl).toBeDefined()
-        expect(res.body.data.downloadUrl).toContain('presigned-download-url')
-      } catch {
-        // Isolated CI fallback
-      }
+      const res = await request(server)
+        .get(`/api/v1/documents/${docId}`)
+        .set('Authorization', `Bearer ${employeeUserToken}`)
+
+      expect(res.status).toBe(200)
+      expect(res.body.data.id).toBe(docId)
+      expect(res.body.data.downloadUrl).toBeDefined()
+      expect(res.body.data.downloadUrl).toContain('presigned-download-url')
     })
 
     it('returns 404 for cross-tenant document access', async () => {
-      try {
-        const listRes = await request(server)
-          .get('/api/v1/documents')
-          .set('Authorization', `Bearer ${employeeUserToken}`)
+      if (!isDbConnected) return
 
-        if (!listRes.body.data?.length) return
-        const companyADocId = listRes.body.data[0].id
+      const listRes = await request(server)
+        .get('/api/v1/documents')
+        .set('Authorization', `Bearer ${employeeUserToken}`)
 
-        // Company B employee tries to access Company A document
-        const res = await request(server)
-          .get(`/api/v1/documents/${companyADocId}`)
-          .set('Authorization', `Bearer ${employeeBToken}`)
+      if (!listRes.body.data?.length) return
+      const companyADocId = listRes.body.data[0].id
 
-        expect(res.status).toBe(404)
-        expect(res.body.error.code).toBe('NOT_FOUND')
-      } catch {
-        // Isolated CI fallback
-      }
+      // Company B employee tries to access Company A document
+      const res = await request(server)
+        .get(`/api/v1/documents/${companyADocId}`)
+        .set('Authorization', `Bearer ${employeeBToken}`)
+
+      expect(res.status).toBe(404)
+      expect(res.body.error.code).toBe('NOT_FOUND')
     })
   })
 
   describe('DELETE /api/v1/documents/:id', () => {
     it('returns 404 for non-existent document', async () => {
+      if (!isDbConnected) return
+
       const res = await request(server)
         .delete('/api/v1/documents/non-existent-id')
         .set('Authorization', `Bearer ${adminUserToken}`)
@@ -331,80 +344,74 @@ describe('Document Upload and Management API', () => {
     })
 
     it('returns 404 when attempting to delete a document from another company', async () => {
-      try {
-        const listRes = await request(server)
-          .get('/api/v1/documents')
-          .set('Authorization', `Bearer ${employeeUserToken}`)
+      if (!isDbConnected) return
 
-        if (!listRes.body.data?.length) return
-        const companyADocId = listRes.body.data[0].id
+      const listRes = await request(server)
+        .get('/api/v1/documents')
+        .set('Authorization', `Bearer ${employeeUserToken}`)
 
-        const res = await request(server)
-          .delete(`/api/v1/documents/${companyADocId}`)
-          .set('Authorization', `Bearer ${employeeBToken}`)
+      if (!listRes.body.data?.length) return
+      const companyADocId = listRes.body.data[0].id
 
-        expect(res.status).toBe(404)
-      } catch {
-        // Isolated CI fallback
-      }
+      const res = await request(server)
+        .delete(`/api/v1/documents/${companyADocId}`)
+        .set('Authorization', `Bearer ${employeeBToken}`)
+
+      expect(res.status).toBe(404)
     })
 
     it('allows the original uploader (EMPLOYEE) to delete their own document', async () => {
-      try {
-        // Upload a document as employee
-        const uploadRes = await request(server)
-          .post('/api/v1/documents/upload')
-          .set('Authorization', `Bearer ${employeeUserToken}`)
-          .attach('file', Buffer.from('To be deleted by uploader'), {
-            filename: 'uploader_delete_test.txt',
-            contentType: 'text/plain',
-          })
+      if (!isDbConnected) return
 
-        if (uploadRes.status !== 201) return
-        const docId = uploadRes.body.data.id
+      // Upload a document as employee
+      const uploadRes = await request(server)
+        .post('/api/v1/documents/upload')
+        .set('Authorization', `Bearer ${employeeUserToken}`)
+        .attach('file', Buffer.from('To be deleted by uploader'), {
+          filename: 'uploader_delete_test.txt',
+          contentType: 'text/plain',
+        })
 
-        // Delete as the same employee
-        const deleteRes = await request(server)
-          .delete(`/api/v1/documents/${docId}`)
-          .set('Authorization', `Bearer ${employeeUserToken}`)
+      if (uploadRes.status !== 201) return
+      const docId = uploadRes.body.data.id
 
-        expect(deleteRes.status).toBe(200)
-        expect(deleteRes.body.data.message).toBe('Document deleted successfully.')
+      // Delete as the same employee
+      const deleteRes = await request(server)
+        .delete(`/api/v1/documents/${docId}`)
+        .set('Authorization', `Bearer ${employeeUserToken}`)
 
-        // Verify document is gone
-        const checkRes = await request(server)
-          .get(`/api/v1/documents/${docId}`)
-          .set('Authorization', `Bearer ${employeeUserToken}`)
-        expect(checkRes.status).toBe(404)
-      } catch {
-        // Isolated CI fallback
-      }
+      expect(deleteRes.status).toBe(200)
+      expect(deleteRes.body.data.message).toBe('Document deleted successfully.')
+
+      // Verify document is gone
+      const checkRes = await request(server)
+        .get(`/api/v1/documents/${docId}`)
+        .set('Authorization', `Bearer ${employeeUserToken}`)
+      expect(checkRes.status).toBe(404)
     })
 
     it('allows an ADMIN to delete any document within their company', async () => {
-      try {
-        // Upload as employee
-        const uploadRes = await request(server)
-          .post('/api/v1/documents/upload')
-          .set('Authorization', `Bearer ${employeeUserToken}`)
-          .attach('file', Buffer.from('To be deleted by admin'), {
-            filename: 'admin_delete_test.txt',
-            contentType: 'text/plain',
-          })
+      if (!isDbConnected) return
 
-        if (uploadRes.status !== 201) return
-        const docId = uploadRes.body.data.id
+      // Upload as employee
+      const uploadRes = await request(server)
+        .post('/api/v1/documents/upload')
+        .set('Authorization', `Bearer ${employeeUserToken}`)
+        .attach('file', Buffer.from('To be deleted by admin'), {
+          filename: 'admin_delete_test.txt',
+          contentType: 'text/plain',
+        })
 
-        // Delete as ADMIN
-        const deleteRes = await request(server)
-          .delete(`/api/v1/documents/${docId}`)
-          .set('Authorization', `Bearer ${adminUserToken}`)
+      if (uploadRes.status !== 201) return
+      const docId = uploadRes.body.data.id
 
-        expect(deleteRes.status).toBe(200)
-        expect(deleteRes.body.data.message).toBe('Document deleted successfully.')
-      } catch {
-        // Isolated CI fallback
-      }
+      // Delete as ADMIN
+      const deleteRes = await request(server)
+        .delete(`/api/v1/documents/${docId}`)
+        .set('Authorization', `Bearer ${adminUserToken}`)
+
+      expect(deleteRes.status).toBe(200)
+      expect(deleteRes.body.data.message).toBe('Document deleted successfully.')
     })
   })
 })
