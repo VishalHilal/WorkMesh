@@ -20,10 +20,17 @@ enum Role {
   SUPER_ADMIN
 }
 
+enum DocumentStatus {
+  PENDING
+  PROCESSING
+  READY
+  FAILED
+}
+
 // ---------------------------------------------------------------------------
 // Models
-// Node owns: companies, users, memberships
-// AI service owns: documents, chunks, embeddings, agent runs (via Alembic)
+// Node owns: companies, users, memberships, documents
+// AI service owns: chunks, embeddings, agent runs (via Alembic)
 // ---------------------------------------------------------------------------
 
 model Company {
@@ -35,6 +42,7 @@ model Company {
   updatedAt   DateTime @updatedAt
 
   memberships Membership[]
+  documents   Document[]
 
   @@map("companies")
 }
@@ -49,7 +57,8 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  memberships Membership[]
+  memberships       Membership[]
+  uploadedDocuments Document[]
 
   @@map("users")
 }
@@ -69,4 +78,27 @@ model Membership {
   @@index([companyId])
   @@index([userId])
   @@map("memberships")
+}
+
+model Document {
+  id           String         @id @default(cuid())
+  companyId    String
+  uploadedById String
+  title        String
+  fileName     String
+  fileSize     Int
+  mimeType     String
+  storageKey   String
+  status       DocumentStatus @default(PENDING)
+  errorMessage String?
+  chunkCount   Int            @default(0)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  company    Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  uploadedBy User    @relation(fields: [uploadedById], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([status])
+  @@map("documents")
 }

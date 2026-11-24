@@ -10,6 +10,20 @@ const envSchema = z.object({
     .min(16, 'JWT_ACCESS_SECRET must be at least 16 characters')
     .default('workmesh_dev_jwt_access_secret_32chars_long!'),
   JWT_ACCESS_EXPIRES_IN: z.string().default('15m'),
+
+  // Neon Object Storage
+  AWS_ACCESS_KEY_ID: z.string().optional(),
+  AWS_SECRET_ACCESS_KEY: z.string().optional(),
+  AWS_ENDPOINT_URL_S3: z.string().optional(),
+  AWS_REGION: z.string().default('us-east-2'),
+  NEON_STORAGE_BUCKET: z.string().default('assets'),
+
+  // Neon AI Gateway
+  NEON_AI_GATEWAY_TOKEN: z.string().optional(),
+  NEON_AI_GATEWAY_BASE_URL: z.string().optional(),
+
+  // Neon Functions
+  NEON_FUNCTION_HELLO_URL: z.string().optional(),
 })
 
 const parsed = envSchema.safeParse(process.env)
