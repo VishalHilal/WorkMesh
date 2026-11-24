@@ -1,6 +1,7 @@
 import { useState, useRef, type FormEvent, type DragEvent, type ChangeEvent } from 'react'
 import { useAuth } from '../../context'
 import type { DocumentItem } from './types'
+import { UploadIcon, CloseIcon } from '../../components/icons'
 
 interface DocumentUploadModalProps {
   isOpen: boolean
@@ -154,7 +155,7 @@ export function DocumentUploadModal({ isOpen, onClose, onSuccess }: DocumentUplo
             className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
             aria-label="Close upload modal"
           >
-            ✕
+            <CloseIcon className="w-5 h-5" />
           </button>
         </div>
 
@@ -193,15 +194,15 @@ export function DocumentUploadModal({ isOpen, onClose, onSuccess }: DocumentUplo
             {file ? (
               <div className="space-y-1">
                 <p className="text-sm font-semibold text-slate-900 truncate">{file.name}</p>
-                <p className="text-xs text-slate-500">{formatFileSize(file.size)}</p>
+                <p className="text-xs text-slate-500 tabular-nums">{formatFileSize(file.size)}</p>
                 <p className="text-xs text-indigo-600 font-medium hover:underline pt-1">
                   Click or drag to choose a different file
                 </p>
               </div>
             ) : (
               <div className="space-y-2">
-                <div className="w-10 h-10 mx-auto rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-lg">
-                  ↑
+                <div className="w-10 h-10 mx-auto rounded-full bg-indigo-50 border border-indigo-100 text-indigo-600 flex items-center justify-center">
+                  <UploadIcon className="w-5 h-5" />
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-slate-800">

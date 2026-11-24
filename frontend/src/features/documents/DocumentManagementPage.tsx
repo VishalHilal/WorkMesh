@@ -1,12 +1,20 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Link } from 'react-router-dom'
 import { useAuth } from '../../context'
 import type { DocumentItem } from './types'
 import { DocumentStatusBadge } from './DocumentStatusBadge'
 import { DocumentUploadModal } from './DocumentUploadModal'
+import { AppHeader } from '../../components/AppHeader'
+import {
+  DocumentIcon,
+  UploadIcon,
+  DownloadIcon,
+  TrashIcon,
+  RefreshIcon,
+  CloseIcon,
+} from '../../components/icons'
 
 export function DocumentManagementPage() {
-  const { user: caller, accessToken, logout } = useAuth()
+  const { user: caller, accessToken } = useAuth()
   const [documents, setDocuments] = useState<DocumentItem[]>([])
   const [statusFilter, setStatusFilter] = useState<string>('ALL')
   const [isLoading, setIsLoading] = useState(true)
@@ -139,55 +147,12 @@ export function DocumentManagementPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      {/* Primary Header */}
-      <header className="bg-white border-b border-slate-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-6">
-              <span className="text-lg font-bold text-slate-900 tracking-tight">WorkMesh AI</span>
-              <nav className="flex items-center gap-4">
-                <Link
-                  to="/"
-                  className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
-                >
-                  Dashboard
-                </Link>
-                <Link
-                  to="/documents"
-                  className="text-sm font-semibold text-indigo-600 hover:text-indigo-700 transition-colors"
-                >
-                  Documents
-                </Link>
-                {isAdmin && (
-                  <Link
-                    to="/admin/users"
-                    className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
-                  >
-                    Manage Employees
-                  </Link>
-                )}
-              </nav>
-            </div>
-
-            <div className="flex items-center gap-4">
-              <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-100 text-slate-700">
-                {caller?.firstName} ({caller?.role?.replace('_', ' ')})
-              </span>
-              <button
-                type="button"
-                onClick={logout}
-                className="text-sm font-medium text-slate-600 hover:text-rose-600 transition-colors cursor-pointer"
-              >
-                Sign out
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
+    <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-900 antialiased selection:bg-indigo-100 selection:text-indigo-900">
+      {/* Enterprise Unified Header */}
+      <AppHeader currentTab="documents" />
 
       {/* Main Content Area */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full">
         {/* Title & Primary Action */}
         <div className="sm:flex sm:items-center sm:justify-between mb-8">
           <div>
@@ -202,7 +167,7 @@ export function DocumentManagementPage() {
               onClick={() => setIsUploadModalOpen(true)}
               className="inline-flex items-center gap-2 px-4 py-2 border border-transparent rounded-lg text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 transition-colors shadow-xs cursor-pointer"
             >
-              <span>+</span> Upload Document
+              <UploadIcon className="w-4 h-4" /> Upload Document
             </button>
           </div>
         </div>
@@ -214,9 +179,10 @@ export function DocumentManagementPage() {
             <button
               type="button"
               onClick={() => setError(null)}
-              className="text-rose-500 hover:text-rose-700 cursor-pointer text-lg font-bold"
+              className="p-1 text-rose-500 hover:text-rose-700 hover:bg-rose-100 rounded-md cursor-pointer transition-colors"
+              aria-label="Dismiss error"
             >
-              ×
+              <CloseIcon className="w-4 h-4" />
             </button>
           </div>
         )}
@@ -227,17 +193,18 @@ export function DocumentManagementPage() {
             <button
               type="button"
               onClick={() => setSuccessMessage(null)}
-              className="text-emerald-600 hover:text-emerald-800 cursor-pointer text-lg font-bold"
+              className="p-1 text-emerald-600 hover:text-emerald-800 hover:bg-emerald-100 rounded-md cursor-pointer transition-colors"
+              aria-label="Dismiss success message"
             >
-              ×
+              <CloseIcon className="w-4 h-4" />
             </button>
           </div>
         )}
 
         {/* Filters and Search Bar */}
         <div className="mb-6 flex flex-col sm:flex-row items-center justify-between gap-4 bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Status:</span>
+          <div className="flex items-center gap-3 w-full sm:w-auto">
+            <span className="text-xs font-medium text-slate-500">Filter:</span>
             <div className="flex items-center gap-1.5 overflow-x-auto">
               {(['ALL', 'READY', 'PROCESSING', 'PENDING', 'FAILED'] as const).map((status) => (
                 <button
@@ -260,9 +227,10 @@ export function DocumentManagementPage() {
             type="button"
             onClick={fetchDocuments}
             disabled={isLoading}
-            className="text-xs font-medium text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
+            className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
           >
-            {isLoading ? 'Refreshing...' : '↻ Refresh'}
+            <RefreshIcon className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin text-indigo-600' : ''}`} />
+            {isLoading ? 'Refreshing...' : 'Refresh'}
           </button>
         </div>
 
@@ -275,8 +243,8 @@ export function DocumentManagementPage() {
             </div>
           ) : documents.length === 0 ? (
             <div className="p-12 text-center">
-              <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center text-xl">
-                📄
+              <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center">
+                <DocumentIcon className="w-6 h-6 stroke-1" />
               </div>
               <h3 className="text-sm font-semibold text-slate-900">No documents found</h3>
               <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
@@ -290,7 +258,7 @@ export function DocumentManagementPage() {
                   onClick={() => setIsUploadModalOpen(true)}
                   className="mt-4 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 transition-colors cursor-pointer"
                 >
-                  + Upload Document
+                  <UploadIcon className="w-3.5 h-3.5" /> Upload Document
                 </button>
               )}
             </div>
@@ -314,7 +282,7 @@ export function DocumentManagementPage() {
                         <div className="font-semibold text-slate-900">{doc.title}</div>
                         <div className="text-xs text-slate-500 font-mono mt-0.5">{doc.fileName}</div>
                       </td>
-                      <td className="px-6 py-4 text-slate-600 text-xs">
+                      <td className="px-6 py-4 text-slate-600 text-xs tabular-nums">
                         {formatFileSize(doc.fileSize)}
                       </td>
                       <td className="px-6 py-4 text-slate-600 text-xs">
@@ -322,7 +290,7 @@ export function DocumentManagementPage() {
                           ? `${doc.uploadedBy.firstName} ${doc.uploadedBy.lastName}`
                           : 'Unknown'}
                       </td>
-                      <td className="px-6 py-4 text-slate-500 text-xs">
+                      <td className="px-6 py-4 text-slate-500 text-xs tabular-nums">
                         {formatDate(doc.createdAt)}
                       </td>
                       <td className="px-6 py-4">
@@ -333,20 +301,22 @@ export function DocumentManagementPage() {
                           <button
                             type="button"
                             onClick={() => handleDownload(doc)}
-                            className="px-2.5 py-1 rounded-md text-xs font-medium text-slate-700 hover:bg-slate-100 border border-slate-200 transition-colors cursor-pointer"
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium text-slate-700 hover:bg-slate-100 border border-slate-200 transition-colors cursor-pointer"
                             title="Download document"
                           >
-                            Download
+                            <DownloadIcon className="w-3.5 h-3.5" />
+                            <span>Download</span>
                           </button>
                           {canDeleteDocument(doc) && (
                             <button
                               type="button"
                               onClick={() => handleDelete(doc)}
                               disabled={deletingId === doc.id}
-                              className="px-2.5 py-1 rounded-md text-xs font-medium text-rose-600 hover:bg-rose-50 border border-rose-200 transition-colors cursor-pointer disabled:opacity-50"
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium text-rose-600 hover:bg-rose-50 border border-rose-200 transition-colors cursor-pointer disabled:opacity-50"
                               title="Delete document"
                             >
-                              {deletingId === doc.id ? 'Deleting...' : 'Delete'}
+                              <TrashIcon className="w-3.5 h-3.5" />
+                              <span>{deletingId === doc.id ? 'Deleting...' : 'Delete'}</span>
                             </button>
                           )}
                         </div>
