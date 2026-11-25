@@ -14,7 +14,7 @@ def test_retrieve_relevant_chunks_success():
         chunk_index=0,
         content="Leave policy: Employees receive 20 days paid vacation.",
         token_count=10,
-        embedding=[0.1] * 384,
+        embedding=[0.1] * 768,
     )
     chunk2 = DocumentChunk(
         id="chunk_2",
@@ -23,7 +23,7 @@ def test_retrieve_relevant_chunks_success():
         chunk_index=1,
         content="Sick leave: Up to 10 days annual sick leave.",
         token_count=10,
-        embedding=[0.2] * 384,
+        embedding=[0.2] * 768,
     )
 
     # session.execute().all() returns tuples of (DocumentChunk, similarity)
@@ -34,7 +34,7 @@ def test_retrieve_relevant_chunks_success():
 
     with patch(
         "app.services.retriever.generate_embeddings",
-        return_value=[[0.05] * 384],
+        return_value=[[0.05] * 768],
     ):
         matches = retrieve_relevant_chunks(
             session=mock_session,
@@ -69,7 +69,7 @@ def test_retrieve_relevant_chunks_with_document_ids():
 
     with patch(
         "app.services.retriever.generate_embeddings",
-        return_value=[[0.1] * 384],
+        return_value=[[0.1] * 768],
     ):
         matches = retrieve_relevant_chunks(
             session=mock_session,

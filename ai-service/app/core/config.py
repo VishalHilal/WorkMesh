@@ -28,9 +28,10 @@ class Settings(BaseSettings):
     aws_region: str = "us-east-2"
     neon_storage_bucket: str = "assets"
 
-    # Embedding configuration
-    embedding_model_name: str = "all-MiniLM-L6-v2"
-    embedding_dimension: int = 384
+    # Embedding configuration (Google Gemini)
+    embedding_model_name: str = "gemini-embedding-2"
+    gemini_embedding_model: str = "gemini-embedding-2"
+    embedding_dimension: int = 768
 
     # Google Gemini LLM configuration
     gemini_api_key: str = ""
