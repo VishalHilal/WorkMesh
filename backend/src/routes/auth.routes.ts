@@ -14,6 +14,7 @@ const loginLimiter = rateLimit({
   limit: process.env['NODE_ENV'] === 'test' ? 50 : 5,
   standardHeaders: 'draft-8',
   legacyHeaders: false,
+  validate: { xForwardedForHeader: false, default: false },
   message: {
     error: {
       code: 'TOO_MANY_REQUESTS',

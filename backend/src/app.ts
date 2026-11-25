@@ -10,6 +10,10 @@ import { errorMiddleware } from './middleware/error.middleware.js'
 
 const app = express()
 
+// Trust reverse proxy (e.g., Render, Vercel, Cloudflare) for rate limiting & accurate client IP
+app.set('trust proxy', 1)
+
+
 app.use(helmet())
 app.use(cors())
 app.use(express.json())
