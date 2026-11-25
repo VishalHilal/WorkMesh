@@ -33,6 +33,11 @@ enum EmailDraftStatus {
   REJECTED
 }
 
+enum ReportFormat {
+  PDF
+  DOCX
+}
+
 // ---------------------------------------------------------------------------
 // Models
 // Node owns: companies, users, memberships, documents
@@ -52,6 +57,7 @@ model Company {
   auditLogs           AuditLog[]
   conversationThreads ConversationThread[]
   emailDrafts         EmailDraft[]
+  generatedReports    GeneratedReport[]
 
   @@map("companies")
 }
@@ -71,6 +77,7 @@ model User {
   auditLogs           AuditLog[]
   conversationThreads ConversationThread[]
   emailDrafts         EmailDraft[]
+  generatedReports    GeneratedReport[]
 
   @@map("users")
 }
@@ -182,4 +189,24 @@ model EmailDraft {
 
   @@index([companyId, userId])
   @@map("email_drafts")
+}
+
+model GeneratedReport {
+  id         String       @id @default(cuid())
+  companyId  String
+  userId     String
+  title      String
+  format     ReportFormat
+  template   String       @default("executive_summary")
+  fileName   String
+  mimeType   String
+  fileSize   Int
+  storageKey String
+  createdAt  DateTime     @default(now())
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([companyId, createdAt(sort: Desc)])
+  @@map("generated_reports")
 }
