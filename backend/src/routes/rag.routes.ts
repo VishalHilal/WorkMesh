@@ -4,6 +4,7 @@ import { Prisma } from '@prisma/client'
 import { prisma } from '../lib/db.js'
 import { authenticate, getAuthenticatedCompanyId } from '../middleware/auth.middleware.js'
 import { sendRagChat, RagServiceError } from '../services/rag.service.js'
+import { runSupervisorAgent, AgentServiceError } from '../services/agent.service.js'
 import { recordAuditEvent } from '../lib/audit.js'
 
 const ragRouter = Router()
@@ -35,6 +36,7 @@ const ragChatRequestSchema = z.object({
   threshold: z.coerce.number().min(0).max(1).default(0.4),
   chat_history: z.array(chatMessageSchema).optional(),
   document_ids: z.array(z.string().min(1)).optional(),
+  mode: z.enum(['agent', 'rag']).optional().default('agent'),
 })
 
 /**
@@ -280,7 +282,7 @@ ragRouter.post('/chat', async (req: Request, res: Response) => {
     return
   }
 
-  const { query, thread_id, top_k, threshold, chat_history, document_ids } = parseResult.data
+  const { query, thread_id, top_k, threshold, chat_history, document_ids, mode } = parseResult.data
 
   let activeThreadId = thread_id
   let historyToSend = chat_history
@@ -339,14 +341,65 @@ ragRouter.post('/chat', async (req: Request, res: Response) => {
   }
 
   try {
-    const chatData = await sendRagChat({
-      company_id: companyId,
-      query,
-      top_k,
-      threshold,
-      chat_history: historyToSend,
-      document_ids,
-    })
+    let chatData: {
+      query: string
+      answer: string
+      citations: Array<{
+        chunk_id: string
+        document_id: string
+        chunk_index: number
+        snippet: string
+        similarity_score: number
+      }>
+      model: string
+      grounded: boolean
+      agentHandled: string
+      agentPath: string[]
+      iterations: number
+      mode: 'agent' | 'rag'
+    }
+
+    if (mode === 'agent') {
+      const agentResult = await runSupervisorAgent({
+        company_id: companyId,
+        query,
+        chat_history: historyToSend,
+        document_ids,
+      })
+
+      chatData = {
+        query,
+        answer: agentResult.answer,
+        citations: agentResult.citations || [],
+        model: 'gemini-2.5-flash',
+        grounded: (agentResult.citations && agentResult.citations.length > 0) || false,
+        agentHandled: agentResult.agent_handled,
+        agentPath: agentResult.agent_path,
+        iterations: agentResult.iterations,
+        mode: 'agent',
+      }
+    } else {
+      const ragResult = await sendRagChat({
+        company_id: companyId,
+        query,
+        top_k,
+        threshold,
+        chat_history: historyToSend,
+        document_ids,
+      })
+
+      chatData = {
+        query: ragResult.query,
+        answer: ragResult.answer,
+        citations: ragResult.citations || [],
+        model: ragResult.model,
+        grounded: ragResult.grounded,
+        agentHandled: 'knowledge_agent',
+        agentPath: ['knowledge_agent'],
+        iterations: 1,
+        mode: 'rag',
+      }
+    }
 
     // Persist user message and assistant answer to thread
     if (activeThreadId) {
@@ -382,27 +435,49 @@ ragRouter.post('/chat', async (req: Request, res: Response) => {
       data: {
         ...chatData,
         thread_id: activeThreadId,
+        threadId: activeThreadId,
       },
       meta: { timestamp: new Date().toISOString() },
     })
 
-    void recordAuditEvent({
-      companyId,
-      userId,
-      action: 'RAG_QUERY_EXECUTED',
-      entityType: 'RagChat',
-      entityId: activeThreadId ?? null,
-      details: {
-        queryLength: query.length,
-        citationsCount: chatData.citations?.length ?? 0,
-        threadId: activeThreadId ?? null,
-        top_k,
-        threshold,
-      },
-      ipAddress: req.ip || req.socket.remoteAddress,
-    }).catch(() => {})
+    if (mode === 'agent') {
+      void recordAuditEvent({
+        companyId,
+        userId,
+        action: 'AGENT_WORKFLOW_EXECUTED',
+        entityType: 'AgentChat',
+        entityId: activeThreadId ?? null,
+        details: {
+          queryLength: query.length,
+          agentHandled: chatData.agentHandled,
+          agentPath: chatData.agentPath,
+          iterations: chatData.iterations,
+          citationsCount: chatData.citations?.length ?? 0,
+          threadId: activeThreadId ?? null,
+          mode: 'agent',
+        },
+        ipAddress: req.ip || req.socket.remoteAddress,
+      }).catch(() => {})
+    } else {
+      void recordAuditEvent({
+        companyId,
+        userId,
+        action: 'RAG_QUERY_EXECUTED',
+        entityType: 'RagChat',
+        entityId: activeThreadId ?? null,
+        details: {
+          queryLength: query.length,
+          citationsCount: chatData.citations?.length ?? 0,
+          threadId: activeThreadId ?? null,
+          top_k,
+          threshold,
+          mode: 'rag',
+        },
+        ipAddress: req.ip || req.socket.remoteAddress,
+      }).catch(() => {})
+    }
   } catch (err: unknown) {
-    if (err instanceof RagServiceError) {
+    if (err instanceof RagServiceError || err instanceof AgentServiceError) {
       res.status(err.statusCode).json({
         error: {
           code: err.code,
