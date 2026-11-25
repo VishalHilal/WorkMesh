@@ -357,6 +357,13 @@ ragRouter.post('/chat', async (req: Request, res: Response) => {
       agentPath: string[]
       iterations: number
       mode: 'agent' | 'rag'
+      draft_payload?: {
+        approval_token: string
+        to: string
+        subject: string
+        body: string
+        cc: string[]
+      } | undefined
     }
 
     if (mode === 'agent') {
@@ -366,6 +373,39 @@ ragRouter.post('/chat', async (req: Request, res: Response) => {
         chat_history: historyToSend,
         document_ids,
       })
+
+      let persistedDraftPayload:
+        | {
+            approval_token: string
+            to: string
+            subject: string
+            body: string
+            cc: string[]
+          }
+        | undefined
+
+      if (agentResult.draft_payload && agentResult.approval_token) {
+        await prisma.emailDraft.create({
+          data: {
+            companyId,
+            userId,
+            approvalToken: agentResult.approval_token,
+            to: agentResult.draft_payload.to,
+            subject: agentResult.draft_payload.subject,
+            body: agentResult.draft_payload.body,
+            cc: agentResult.draft_payload.cc ?? [],
+            status: 'PENDING',
+          },
+        }).catch(() => {})
+
+        persistedDraftPayload = {
+          approval_token: agentResult.approval_token,
+          to: agentResult.draft_payload.to,
+          subject: agentResult.draft_payload.subject,
+          body: agentResult.draft_payload.body,
+          cc: agentResult.draft_payload.cc ?? [],
+        }
+      }
 
       chatData = {
         query,
@@ -377,6 +417,7 @@ ragRouter.post('/chat', async (req: Request, res: Response) => {
         agentPath: agentResult.agent_path,
         iterations: agentResult.iterations,
         mode: 'agent',
+        ...(persistedDraftPayload ? { draft_payload: persistedDraftPayload } : {}),
       }
     } else {
       const ragResult = await sendRagChat({

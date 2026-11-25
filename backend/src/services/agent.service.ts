@@ -15,12 +15,33 @@ export interface AgentCitation {
   similarity_score: number
 }
 
+export interface EmailDraftPayload {
+  to: string
+  subject: string
+  body: string
+  cc: string[]
+}
+
 export interface AgentRunResponseData {
   answer: string
   agent_handled: 'knowledge_agent' | 'office_agent' | 'supervisor' | string
   agent_path: string[]
   citations: AgentCitation[]
   iterations: number
+  pending_approval?: boolean | undefined
+  approval_token?: string | null | undefined
+  draft_payload?: EmailDraftPayload | null | undefined
+}
+
+export interface EmailDraftGeneratePayload {
+  company_id: string
+  instruction: string
+  context?: string | undefined
+}
+
+export interface EmailDraftGenerateResult {
+  approval_token: string
+  draft: EmailDraftPayload
 }
 
 export class AgentServiceError extends Error {
@@ -80,6 +101,80 @@ export async function runSupervisorAgent(payload: AgentRunPayload): Promise<Agen
 
     if (!responseData.success || !responseData.data) {
       throw new AgentServiceError('Invalid response payload from AI agent service', 502)
+    }
+
+    return responseData.data
+  } catch (err: unknown) {
+    if (err instanceof AgentServiceError) {
+      throw err
+    }
+
+    if (err instanceof Error && err.name === 'AbortError') {
+      throw new AgentServiceError(
+        'Request to AI service timed out after 35 seconds',
+        504,
+        'AI_SERVICE_TIMEOUT'
+      )
+    }
+
+    const message = err instanceof Error ? err.message : 'Unknown network failure'
+    throw new AgentServiceError(
+      `Unable to communicate with AI agent service at ${env.AI_SERVICE_URL}: ${message}`,
+      503,
+      'AI_SERVICE_UNAVAILABLE'
+    )
+  } finally {
+    clearTimeout(timeoutId)
+  }
+}
+
+/**
+ * Request a structured email draft + UUID4 approval token from the AI service.
+ */
+export async function generateEmailDraft(
+  payload: EmailDraftGeneratePayload
+): Promise<EmailDraftGenerateResult> {
+  const url = `${env.AI_SERVICE_URL}/api/v1/agents/email/draft`
+
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), 35000)
+
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Internal-Key': env.INTERNAL_API_KEY,
+      },
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+    })
+
+    if (!response.ok) {
+      let errorMessage = `AI service returned HTTP ${response.status}`
+      try {
+        const errorJson = (await response.json()) as { detail?: string }
+        if (errorJson.detail) {
+          errorMessage = errorJson.detail
+        }
+      } catch {
+        // Fall back to HTTP status message
+      }
+
+      throw new AgentServiceError(
+        errorMessage,
+        response.status === 401 ? 500 : response.status,
+        'AGENT_SERVICE_ERROR'
+      )
+    }
+
+    const responseData = (await response.json()) as {
+      success: boolean
+      data: EmailDraftGenerateResult
+    }
+
+    if (!responseData.success || !responseData.data) {
+      throw new AgentServiceError('Invalid response payload from AI email draft service', 502)
     }
 
     return responseData.data

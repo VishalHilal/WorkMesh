@@ -37,6 +37,9 @@ def run_agent_graph_endpoint(payload: AgentRunRequest) -> AgentRunResponse:
                 agent_path=result["agent_path"],
                 citations=result["citations"],
                 iterations=result["iterations"],
+                pending_approval=result.get("pending_approval", False),
+                approval_token=result.get("approval_token"),
+                draft_payload=result.get("draft_payload"),
             ),
         )
     except Exception as exc:
