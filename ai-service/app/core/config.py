@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     debug: bool = False
     environment: str = "development"
     port: int = 8000
+    internal_api_key: str = "workmesh-internal-secret-2026-prod-xyz"
 
     # Database
     database_url: str = ""
