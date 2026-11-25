@@ -8,12 +8,13 @@ import { UserManagementPage } from './features/users/UserManagementPage'
 import { DocumentManagementPage } from './features/documents/DocumentManagementPage'
 import { KnowledgeAssistantPage } from './features/rag/KnowledgeAssistantPage'
 import {
-  DocumentIcon,
-  UsersIcon,
-  DatabaseIcon,
-  ShieldCheckIcon,
-  SparklesIcon,
-} from './components/icons'
+  FileText,
+  Users,
+  Database,
+  ShieldCheck,
+  Sparkles,
+  Cpu,
+} from 'lucide-react'
 import './App.css'
 
 function DashboardShell() {
@@ -51,14 +52,14 @@ function DashboardShell() {
                 to="/assistant"
                 className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-indigo-600 text-white rounded-lg text-xs font-semibold hover:bg-indigo-700 transition-colors shadow-2xs"
               >
-                <SparklesIcon className="w-3.5 h-3.5" />
+                <Sparkles className="w-3.5 h-3.5" />
                 <span>AI Assistant</span>
               </Link>
               <Link
                 to="/documents"
                 className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white text-slate-700 border border-slate-200 rounded-lg text-xs font-semibold hover:bg-slate-50 transition-colors shadow-2xs"
               >
-                <DocumentIcon className="w-3.5 h-3.5 text-slate-500" />
+                <FileText className="w-3.5 h-3.5 text-slate-500" />
                 <span>Document Hub</span>
               </Link>
               {isAdmin && (
@@ -66,7 +67,7 @@ function DashboardShell() {
                   to="/admin/users"
                   className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white text-slate-700 border border-slate-200 rounded-lg text-xs font-semibold hover:bg-slate-50 transition-colors shadow-2xs"
                 >
-                  <UsersIcon className="w-3.5 h-3.5 text-slate-500" />
+                  <Users className="w-3.5 h-3.5 text-slate-500" />
                   <span>Directory</span>
                 </Link>
               )}
@@ -81,7 +82,7 @@ function DashboardShell() {
           <div className="bg-white p-4.5 rounded-xl border border-slate-200 shadow-2xs">
             <div className="flex items-center justify-between text-slate-400 mb-1.5">
               <span className="text-[11px] font-semibold text-slate-500">Knowledge Storage</span>
-              <DatabaseIcon className="w-4 h-4 text-slate-400" />
+              <Database className="w-4 h-4 text-slate-400" />
             </div>
             <p className="text-base font-bold text-slate-900">Neon Object Storage</p>
             <p className="text-xs text-slate-500 mt-1 flex items-center gap-1.5">
@@ -93,19 +94,19 @@ function DashboardShell() {
           <div className="bg-white p-4.5 rounded-xl border border-slate-200 shadow-2xs">
             <div className="flex items-center justify-between text-slate-400 mb-1.5">
               <span className="text-[11px] font-semibold text-slate-500">Vector Index Engine</span>
-              <SparklesIcon className="w-4 h-4 text-indigo-500" />
+              <Sparkles className="w-4 h-4 text-indigo-500" />
             </div>
             <p className="text-base font-bold text-slate-900">pgvector HNSW</p>
             <p className="text-xs text-slate-500 mt-1 flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-              384-dimensional cosine index
+              768-dimensional cosine index
             </p>
           </div>
 
           <div className="bg-white p-4.5 rounded-xl border border-slate-200 shadow-2xs">
             <div className="flex items-center justify-between text-slate-400 mb-1.5">
               <span className="text-[11px] font-semibold text-slate-500">Tenancy Boundary</span>
-              <ShieldCheckIcon className="w-4 h-4 text-slate-400" />
+              <ShieldCheck className="w-4 h-4 text-slate-400" />
             </div>
             <p className="text-base font-bold text-slate-900">Tenant Scoped</p>
             <p className="text-xs text-slate-500 mt-1 flex items-center gap-1.5">
@@ -117,7 +118,7 @@ function DashboardShell() {
           <div className="bg-white p-4.5 rounded-xl border border-slate-200 shadow-2xs">
             <div className="flex items-center justify-between text-slate-400 mb-1.5">
               <span className="text-[11px] font-semibold text-slate-500">AI Ingestion Pipeline</span>
-              <UsersIcon className="w-4 h-4 text-slate-400" />
+              <Cpu className="w-4 h-4 text-slate-400" />
             </div>
             <p className="text-base font-bold text-slate-900">FastAPI & MiniLM</p>
             <p className="text-xs text-slate-500 mt-1 flex items-center gap-1.5">

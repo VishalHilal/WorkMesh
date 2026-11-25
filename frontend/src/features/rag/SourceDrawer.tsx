@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
+import { X, FileText, ShieldCheck } from 'lucide-react'
 import type { Citation } from './types'
-import { CloseIcon, DocumentIcon, ShieldCheckIcon } from '../../components/icons'
 
 interface SourceDrawerProps {
   citation: Citation | null
@@ -43,7 +43,7 @@ export function SourceDrawer({ citation, onClose }: SourceDrawerProps) {
         <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/70">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600">
-              <DocumentIcon className="w-4 h-4" />
+              <FileText className="w-4 h-4" />
             </div>
             <div>
               <h3 id="source-drawer-title" className="text-sm font-bold text-slate-900 leading-tight">
@@ -61,7 +61,7 @@ export function SourceDrawer({ citation, onClose }: SourceDrawerProps) {
             aria-label="Close source drawer"
             className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 transition-colors"
           >
-            <CloseIcon className="w-4 h-4" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
@@ -84,7 +84,7 @@ export function SourceDrawer({ citation, onClose }: SourceDrawerProps) {
                 Verification
               </span>
               <div className="flex items-center gap-1.5 mt-1 text-emerald-600">
-                <ShieldCheckIcon className="w-4 h-4 shrink-0" />
+                <ShieldCheck className="w-4 h-4 shrink-0" />
                 <span className="text-xs font-semibold">Tenant Verified</span>
               </div>
             </div>
