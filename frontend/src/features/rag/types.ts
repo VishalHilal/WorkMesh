@@ -16,6 +16,31 @@ export interface ChatMessage {
   timestamp: string
 }
 
+export interface ConversationThreadItem {
+  id: string
+  companyId: string
+  userId: string
+  title: string
+  createdAt: string
+  updatedAt: string
+  _count?: {
+    messages: number
+  }
+}
+
+export interface ThreadMessageItem {
+  id: string
+  threadId: string
+  role: 'user' | 'assistant'
+  content: string
+  citations?: Citation[] | null
+  createdAt: string
+}
+
+export interface ThreadDetail extends ConversationThreadItem {
+  messages: ThreadMessageItem[]
+}
+
 export interface RagChatResponse {
   success: boolean
   data: {
@@ -24,6 +49,7 @@ export interface RagChatResponse {
     citations: Citation[]
     model: string
     grounded: boolean
+    thread_id?: string
   }
   meta: {
     timestamp: string
