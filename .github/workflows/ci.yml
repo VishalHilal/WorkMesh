@@ -99,28 +99,3 @@ jobs:
       - name: Test
         run: pytest
 
-  deploy-ai-service:
-    name: Deploy AI Service to Hugging Face
-    needs: [ai-service]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Push to Hugging Face Space
-        env:
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
-        run: |
-          if [ -z "$HF_TOKEN" ]; then
-            echo "HF_TOKEN secret is not configured, skipping Hugging Face deployment."
-            exit 0
-          fi
-          cd ai-service
-          git init
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git checkout -b main
-          git add .
-          git commit -m "deploy: update ai-service from commit ${{ github.sha }}"
-          git push --force https://Vishal0007:${HF_TOKEN}@huggingface.co/spaces/Vishal0007/workmesh-ai-service main
-
