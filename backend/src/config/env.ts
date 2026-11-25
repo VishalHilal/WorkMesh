@@ -24,6 +24,10 @@ const envSchema = z.object({
 
   // Neon Functions
   NEON_FUNCTION_HELLO_URL: z.string().optional(),
+
+  // AI Service
+  AI_SERVICE_URL: z.string().default('http://localhost:8000'),
+  INTERNAL_API_KEY: z.string().default('workmesh-internal-secret-2026-prod-xyz'),
 })
 
 const parsed = envSchema.safeParse(process.env)

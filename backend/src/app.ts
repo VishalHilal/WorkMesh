@@ -5,6 +5,7 @@ import { healthRouter } from './routes/health.routes.js'
 import { authRouter } from './routes/auth.routes.js'
 import { usersRouter } from './routes/user.routes.js'
 import { documentsRouter } from './routes/document.routes.js'
+import { ragRouter } from './routes/rag.routes.js'
 import { errorMiddleware } from './middleware/error.middleware.js'
 
 const app = express()
@@ -24,6 +25,7 @@ app.get('/', (_req, res) => {
       auth: '/api/v1/auth',
       documents: '/api/v1/documents',
       users: '/api/v1/users',
+      rag: '/api/v1/rag',
     },
     meta: { timestamp: new Date().toISOString() },
   })
@@ -33,6 +35,7 @@ app.use('/api/v1/health', healthRouter)
 app.use('/api/v1/auth', authRouter)
 app.use('/api/v1/users', usersRouter)
 app.use('/api/v1/documents', documentsRouter)
+app.use('/api/v1/rag', ragRouter)
 
 // 404 handler
 app.use((_req, res) => {
