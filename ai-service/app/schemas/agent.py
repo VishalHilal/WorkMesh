@@ -1,5 +1,7 @@
 """Pydantic schemas for multi-agent graph execution endpoints."""
 
+from typing import Any
+
 from pydantic import BaseModel, Field
 
 from app.schemas.chat import ChatMessage, Citation
@@ -26,6 +28,9 @@ class AgentRunData(BaseModel):
     agent_path: list[str]
     citations: list[Citation] = Field(default_factory=list)
     iterations: int = 1
+    pending_approval: bool = False
+    approval_token: str | None = None
+    draft_payload: dict[str, Any] | None = None
 
 
 class AgentRunResponse(BaseModel):

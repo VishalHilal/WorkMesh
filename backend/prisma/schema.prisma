@@ -27,6 +27,12 @@ enum DocumentStatus {
   FAILED
 }
 
+enum EmailDraftStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 // ---------------------------------------------------------------------------
 // Models
 // Node owns: companies, users, memberships, documents
@@ -45,6 +51,7 @@ model Company {
   documents           Document[]
   auditLogs           AuditLog[]
   conversationThreads ConversationThread[]
+  emailDrafts         EmailDraft[]
 
   @@map("companies")
 }
@@ -63,6 +70,7 @@ model User {
   uploadedDocuments   Document[]
   auditLogs           AuditLog[]
   conversationThreads ConversationThread[]
+  emailDrafts         EmailDraft[]
 
   @@map("users")
 }
@@ -154,4 +162,24 @@ model ThreadMessage {
 
   @@index([threadId, createdAt(sort: Asc)])
   @@map("thread_messages")
+}
+
+model EmailDraft {
+  id            String           @id @default(cuid())
+  companyId     String
+  userId        String
+  approvalToken String           @unique
+  to            String
+  subject       String
+  body          String
+  cc            String[]
+  status        EmailDraftStatus @default(PENDING)
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([companyId, userId])
+  @@map("email_drafts")
 }
