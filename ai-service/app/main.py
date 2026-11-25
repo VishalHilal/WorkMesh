@@ -5,6 +5,7 @@ from app.api.chat import router as chat_router
 from app.api.email import router as email_router
 from app.api.health import router as health_router
 from app.api.ingest import router as ingest_router
+from app.api.reports import router as reports_router
 from app.api.retrieve import router as retrieve_router
 from app.core.config import settings
 
@@ -21,6 +22,7 @@ app.include_router(retrieve_router, prefix="/api/v1", tags=["retrieval"])
 app.include_router(chat_router, prefix="/api/v1", tags=["chat"])
 app.include_router(agents_router, prefix="/api/v1", tags=["agents"])
 app.include_router(email_router, prefix="/api/v1", tags=["email"])
+app.include_router(reports_router, prefix="/api/v1", tags=["reports"])
 
 
 @app.get("/")
