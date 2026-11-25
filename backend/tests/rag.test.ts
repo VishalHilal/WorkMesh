@@ -4,6 +4,7 @@ import request from 'supertest'
 import { app } from '../src/app.js'
 import { signAccessToken } from '../src/lib/auth.js'
 import * as ragService from '../src/services/rag.service.js'
+import * as agentService from '../src/services/agent.service.js'
 import { prisma } from '../src/lib/db.js'
 
 // In-memory mock store for conversation threads and messages
@@ -303,6 +304,7 @@ describe('RAG Chat & Persistent Threads API', () => {
         .send({
           query: 'How many days of sick leave do we get?',
           thread_id: threadId,
+          mode: 'rag',
         })
 
       expect(chatRes.status).toBe(200)
@@ -339,6 +341,7 @@ describe('RAG Chat & Persistent Threads API', () => {
         .set('Authorization', `Bearer ${validToken}`)
         .send({
           query: 'What is the standard working hours?',
+          mode: 'rag',
         })
 
       expect(chatRes.status).toBe(200)
@@ -354,6 +357,63 @@ describe('RAG Chat & Persistent Threads API', () => {
       expect(listRes.status).toBe(200)
       expect(listRes.body.data.length).toBeGreaterThanOrEqual(1)
       expect(listRes.body.data[0].id).toBe(chatRes.body.data.thread_id)
+    })
+  })
+
+  describe('Multi-Agent Supervisor Integration', () => {
+    it('executes chat via supervisor in agent mode and records AGENT_WORKFLOW_EXECUTED audit event', async () => {
+      const mockAgentResponse: agentService.AgentRunResponseData = {
+        answer: 'Draft of announcement prepared [Subject: Team Meeting].',
+        agent_handled: 'office_agent',
+        agent_path: ['supervisor', 'office_agent'],
+        citations: [],
+        iterations: 1,
+      }
+
+      vi.spyOn(agentService, 'runSupervisorAgent').mockResolvedValueOnce(mockAgentResponse)
+
+      const chatRes = await request(server)
+        .post('/api/v1/rag/chat')
+        .set('Authorization', `Bearer ${validToken}`)
+        .send({
+          query: 'Draft a quick announcement for the team meeting tomorrow.',
+          mode: 'agent',
+        })
+
+      expect(chatRes.status).toBe(200)
+      expect(chatRes.body.success).toBe(true)
+      expect(chatRes.body.data.agentHandled).toBe('office_agent')
+      expect(chatRes.body.data.agentPath).toEqual(['supervisor', 'office_agent'])
+      expect(chatRes.body.data.mode).toBe('agent')
+      expect(chatRes.body.data.answer).toContain('Draft of announcement')
+      expect(chatRes.body.data).toHaveProperty('thread_id')
+
+      expect(prisma.auditLog.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            action: 'AGENT_WORKFLOW_EXECUTED',
+            entityType: 'AgentChat',
+            companyId,
+          }),
+        })
+      )
+    })
+
+    it('returns 502/503 when AI agent service encounters error', async () => {
+      vi.spyOn(agentService, 'runSupervisorAgent').mockRejectedValueOnce(
+        new agentService.AgentServiceError('Agent graph failed', 503, 'AI_SERVICE_UNAVAILABLE')
+      )
+
+      const chatRes = await request(server)
+        .post('/api/v1/rag/chat')
+        .set('Authorization', `Bearer ${validToken}`)
+        .send({
+          query: 'Draft an announcement',
+          mode: 'agent',
+        })
+
+      expect(chatRes.status).toBe(503)
+      expect(chatRes.body.error.code).toBe('AI_SERVICE_UNAVAILABLE')
     })
   })
 })

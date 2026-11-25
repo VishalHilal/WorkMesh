@@ -14,6 +14,10 @@ export interface ChatMessage {
   model?: string
   grounded?: boolean
   timestamp: string
+  agentHandled?: 'knowledge_agent' | 'office_agent' | 'supervisor' | string
+  agentPath?: string[]
+  iterations?: number
+  mode?: 'rag' | 'agent'
 }
 
 export interface ConversationThreadItem {
@@ -50,6 +54,11 @@ export interface RagChatResponse {
     model: string
     grounded: boolean
     thread_id?: string
+    threadId?: string
+    agentHandled?: 'knowledge_agent' | 'office_agent' | 'supervisor' | string
+    agentPath?: string[]
+    iterations?: number
+    mode?: 'rag' | 'agent'
   }
   meta: {
     timestamp: string

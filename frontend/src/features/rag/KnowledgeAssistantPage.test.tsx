@@ -439,4 +439,104 @@ describe('KnowledgeAssistantPage', () => {
       )
     })
   })
+
+  it('toggles between Multi-Agent and Standard RAG mode and submits selected mode', async () => {
+    let capturedBody: Record<string, unknown> | null = null
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation(async (url: string, opts?: RequestInit) => {
+        if (url === '/api/v1/rag/threads') {
+          return {
+            ok: true,
+            json: async () => ({ success: true, data: [] }),
+          }
+        }
+        if (url === '/api/v1/rag/chat') {
+          capturedBody = JSON.parse(opts?.body as string)
+          return {
+            ok: true,
+            json: async () => ({
+              success: true,
+              data: {
+                query: 'Test question',
+                answer: 'RAG Answer',
+                citations: [],
+                model: 'gemini-3.8-flash',
+                grounded: true,
+                mode: capturedBody?.mode,
+                agentHandled: 'knowledge_agent',
+              },
+            }),
+          }
+        }
+        return { ok: true, json: async () => ({}) }
+      })
+    )
+
+    renderPage()
+
+    // 1. By default, Multi-Agent mode is active
+    const multiAgentBtn = screen.getByRole('button', { name: /Multi-Agent/i })
+    const standardRagBtn = screen.getByRole('button', { name: /Standard RAG/i })
+    expect(multiAgentBtn).toBeInTheDocument()
+    expect(standardRagBtn).toBeInTheDocument()
+
+    // 2. Click Standard RAG toggle
+    fireEvent.click(standardRagBtn)
+
+    // 3. Send message
+    const input = screen.getByPlaceholderText(/Ask a question about your company's documents/i)
+    fireEvent.change(input, { target: { value: 'Test question' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Send message' }))
+
+    await waitFor(() => {
+      expect(capturedBody).not.toBeNull()
+      expect(capturedBody?.mode).toBe('rag')
+    })
+  })
+
+  it('displays Agent Routing Badges and trajectory pill when returned by backend', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation(async (url: string) => {
+        if (url === '/api/v1/rag/threads') {
+          return {
+            ok: true,
+            json: async () => ({ success: true, data: [] }),
+          }
+        }
+        if (url === '/api/v1/rag/chat') {
+          return {
+            ok: true,
+            json: async () => ({
+              success: true,
+              data: {
+                query: 'Draft announcement',
+                answer: '### Executive Memo\n\nPlease find attached the agenda.',
+                citations: [],
+                model: 'gemini-2.5-flash',
+                grounded: false,
+                agentHandled: 'office_agent',
+                agentPath: ['supervisor', 'office_agent'],
+                iterations: 1,
+                mode: 'agent',
+              },
+            }),
+          }
+        }
+        return { ok: true, json: async () => ({}) }
+      })
+    )
+
+    renderPage()
+
+    const input = screen.getByPlaceholderText(/Ask a question about your company's documents/i)
+    fireEvent.change(input, { target: { value: 'Draft announcement' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Send message' }))
+
+    await waitFor(() => {
+      expect(screen.getByText('Drafted via Office Agent')).toBeInTheDocument()
+      expect(screen.getByText('supervisor → office_agent')).toBeInTheDocument()
+    })
+  })
 })

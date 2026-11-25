@@ -22,6 +22,10 @@ import {
   PanelLeftOpen,
   X,
   Loader2,
+  Bot,
+  BookOpen,
+  FileEdit,
+  Workflow,
 } from 'lucide-react'
 import { useAuth } from '../../context'
 import { AppHeader } from '../../components/AppHeader'
@@ -44,6 +48,7 @@ export function KnowledgeAssistantPage() {
   const [selectedCitation, setSelectedCitation] = useState<Citation | null>(null)
   const [copiedId, setCopiedId] = useState<string | null>(null)
   const [feedback, setFeedback] = useState<Record<string, 'up' | 'down'>>({})
+  const [chatMode, setChatMode] = useState<'agent' | 'rag'>('agent')
 
   // Conversation Threads State
   const [threads, setThreads] = useState<ConversationThreadItem[]>([])
@@ -228,6 +233,7 @@ export function KnowledgeAssistantPage() {
           top_k: 5,
           threshold: 0.4,
           chat_history: chatHistory,
+          mode: chatMode,
         }),
       })
 
@@ -245,6 +251,10 @@ export function KnowledgeAssistantPage() {
         model: result.data.model,
         grounded: result.data.grounded,
         timestamp: new Date().toISOString(),
+        agentHandled: result.data.agentHandled,
+        agentPath: result.data.agentPath,
+        iterations: result.data.iterations,
+        mode: result.data.mode || chatMode,
       }
 
       setMessages((prev) => [...prev, assistantMsg])
@@ -475,7 +485,37 @@ export function KnowledgeAssistantPage() {
               </div>
             </div>
 
-            <div className="flex items-center gap-2 self-start sm:self-auto">
+            <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
+              {/* Multi-Agent vs Standard RAG Mode Toggle */}
+              <div className="inline-flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200 text-xs">
+                <button
+                  type="button"
+                  onClick={() => setChatMode('agent')}
+                  className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md transition-all cursor-pointer font-medium ${
+                    chatMode === 'agent'
+                      ? 'bg-white text-indigo-700 shadow-2xs font-semibold'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                  title="Multi-Agent Supervisor: intent routing to knowledge search or office workflows"
+                >
+                  <Workflow className="w-3.5 h-3.5 text-indigo-600" />
+                  <span>Multi-Agent</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setChatMode('rag')}
+                  className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md transition-all cursor-pointer font-medium ${
+                    chatMode === 'rag'
+                      ? 'bg-white text-indigo-700 shadow-2xs font-semibold'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                  title="Standard RAG: direct vector retrieval from company documents"
+                >
+                  <FileText className="w-3.5 h-3.5 text-slate-500" />
+                  <span>Standard RAG</span>
+                </button>
+              </div>
+
               <button
                 type="button"
                 onClick={handleNewChat}
@@ -544,12 +584,33 @@ export function KnowledgeAssistantPage() {
                   // Assistant Answer Card
                   <div className="max-w-3xl w-full bg-slate-50/80 border border-slate-200 rounded-2xl rounded-tl-xs p-5 space-y-4 shadow-2xs">
                     {/* Top Meta Bar */}
-                    <div className="flex items-center justify-between text-xs pb-3 border-b border-slate-200/80">
-                      <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center justify-between text-xs pb-3 border-b border-slate-200/80 gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
                         <div className="w-5 h-5 rounded-md bg-indigo-600 text-white flex items-center justify-center">
                           <Sparkles className="w-3 h-3" />
                         </div>
                         <span className="font-semibold text-slate-800">WorkMesh Assistant</span>
+
+                        {/* Agent Routing Badges */}
+                        {message.agentHandled === 'knowledge_agent' && (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-medium text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-200/60">
+                            <BookOpen className="w-3 h-3 text-indigo-600" />
+                            Routed via Knowledge Agent
+                          </span>
+                        )}
+                        {message.agentHandled === 'office_agent' && (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200/60">
+                            <FileEdit className="w-3 h-3 text-amber-600" />
+                            Drafted via Office Agent
+                          </span>
+                        )}
+                        {message.agentHandled === 'supervisor' && (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-medium text-purple-700 bg-purple-50 px-2 py-0.5 rounded-full border border-purple-200/60">
+                            <Bot className="w-3 h-3 text-purple-600" />
+                            Handled by Supervisor
+                          </span>
+                        )}
+
                         {message.grounded && (
                           <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200/60">
                             <ShieldCheck className="w-3 h-3 text-emerald-600" />
@@ -558,11 +619,22 @@ export function KnowledgeAssistantPage() {
                         )}
                       </div>
 
-                      {message.model && (
-                        <span className="text-[10px] font-mono text-slate-400 hidden sm:inline">
-                          {message.model}
-                        </span>
-                      )}
+                      <div className="flex items-center gap-2">
+                        {message.agentPath && message.agentPath.length > 1 && (
+                          <span
+                            className="inline-flex items-center gap-1 text-[10px] font-mono text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200"
+                            title={`Agent Trajectory: ${message.agentPath.join(' → ')}`}
+                          >
+                            <Workflow className="w-2.5 h-2.5 text-slate-400" />
+                            {message.agentPath.join(' → ')}
+                          </span>
+                        )}
+                        {message.model && (
+                          <span className="text-[10px] font-mono text-slate-400 hidden sm:inline">
+                            {message.model}
+                          </span>
+                        )}
+                      </div>
                     </div>
 
                     {/* Markdown Formatted Answer Body */}
