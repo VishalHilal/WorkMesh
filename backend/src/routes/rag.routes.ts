@@ -2,6 +2,7 @@ import { Router, type Request, type Response } from 'express'
 import { z } from 'zod'
 import { authenticate, getAuthenticatedCompanyId } from '../middleware/auth.middleware.js'
 import { sendRagChat, RagServiceError } from '../services/rag.service.js'
+import { recordAuditEvent } from '../lib/audit.js'
 
 const ragRouter = Router()
 
@@ -61,6 +62,20 @@ ragRouter.post('/chat', async (req: Request, res: Response) => {
       success: true,
       data: chatData,
       meta: { timestamp: new Date().toISOString() },
+    })
+
+    void recordAuditEvent({
+      companyId,
+      userId: req.user?.userId,
+      action: 'RAG_QUERY_EXECUTED',
+      entityType: 'RagChat',
+      details: {
+        queryLength: query.length,
+        citationsCount: chatData.citations?.length ?? 0,
+        top_k,
+        threshold,
+      },
+      ipAddress: req.ip || req.socket.remoteAddress,
     })
   } catch (err: unknown) {
     if (err instanceof RagServiceError) {
