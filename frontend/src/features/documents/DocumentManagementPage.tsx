@@ -22,12 +22,13 @@ export function DocumentManagementPage() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [retryingId, setRetryingId] = useState<string | null>(null)
 
   const isAdmin = caller?.role === 'ADMIN' || caller?.role === 'SUPER_ADMIN'
 
-  const fetchDocuments = useCallback(async () => {
+  const fetchDocuments = useCallback(async (silent = false) => {
     if (!accessToken) return
-    setIsLoading(true)
+    if (!silent) setIsLoading(true)
     setError(null)
 
     try {
@@ -50,12 +51,15 @@ export function DocumentManagementPage() {
 
       setDocuments(body.data)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred while fetching documents.')
+      if (!silent) {
+        setError(err instanceof Error ? err.message : 'An error occurred while fetching documents.')
+      }
     } finally {
-      setIsLoading(false)
+      if (!silent) setIsLoading(false)
     }
   }, [accessToken, statusFilter])
 
+  // Initial load
   useEffect(() => {
     const timer = setTimeout(() => {
       fetchDocuments()
@@ -63,6 +67,22 @@ export function DocumentManagementPage() {
 
     return () => clearTimeout(timer)
   }, [fetchDocuments])
+
+  // Check if any document is non-terminal (PENDING or PROCESSING)
+  const hasProcessingDocs = documents.some(
+    (doc) => doc.status === 'PENDING' || doc.status === 'PROCESSING'
+  )
+
+  // Automatic polling every 4 seconds when any document is PENDING or PROCESSING
+  useEffect(() => {
+    if (!hasProcessingDocs || !accessToken) return
+
+    const intervalId = setInterval(() => {
+      fetchDocuments(true)
+    }, 4000)
+
+    return () => clearInterval(intervalId)
+  }, [hasProcessingDocs, accessToken, fetchDocuments])
 
   const handleDocumentUploaded = (newDoc: DocumentItem) => {
     setDocuments((prev) => [newDoc, ...prev])
@@ -126,6 +146,41 @@ export function DocumentManagementPage() {
     if (isAdmin) return true
     if (caller?.id === doc.uploadedById) return true
     return false
+  }
+
+  const canRetryDocument = (doc: DocumentItem): boolean => {
+    const isRetryable = doc.status === 'PENDING' || doc.status === 'FAILED'
+    if (!isRetryable) return false
+    if (isAdmin) return true
+    if (caller?.id === doc.uploadedById) return true
+    return false
+  }
+
+  const handleRetry = async (doc: DocumentItem) => {
+    setRetryingId(doc.id)
+    try {
+      const res = await fetch(`/api/v1/documents/${doc.id}/retry`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      })
+
+      const body = await res.json()
+      if (!res.ok) {
+        throw new Error(body?.error?.message ?? 'Failed to retry document ingestion.')
+      }
+
+      setDocuments((prev) =>
+        prev.map((d) => (d.id === doc.id ? { ...d, status: 'PROCESSING', errorMessage: null } : d))
+      )
+      setSuccessMessage(`Retrying ingestion for "${doc.title}". Status updated to Processing.`)
+      setTimeout(() => setSuccessMessage(null), 4000)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to retry ingestion.')
+    } finally {
+      setRetryingId(null)
+    }
   }
 
   const formatFileSize = (bytes: number): string => {
@@ -223,15 +278,23 @@ export function DocumentManagementPage() {
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={fetchDocuments}
-            disabled={isLoading}
-            className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
-          >
-            <RotateCcw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin text-indigo-600' : ''}`} />
-            {isLoading ? 'Refreshing...' : 'Refresh'}
-          </button>
+          <div className="flex items-center gap-3">
+            {hasProcessingDocs && (
+              <span className="inline-flex items-center gap-1.5 text-[11px] text-amber-700 font-medium bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200 animate-pulse">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping" />
+                Live Ingestion Sync
+              </span>
+            )}
+            <button
+              type="button"
+              onClick={() => fetchDocuments()}
+              disabled={isLoading}
+              className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
+            >
+              <RotateCcw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin text-indigo-600' : ''}`} />
+              {isLoading ? 'Refreshing...' : 'Refresh'}
+            </button>
+          </div>
         </div>
 
         {/* Documents Table */}
@@ -298,6 +361,18 @@ export function DocumentManagementPage() {
                       </td>
                       <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end gap-2">
+                          {canRetryDocument(doc) && (
+                            <button
+                              type="button"
+                              onClick={() => handleRetry(doc)}
+                              disabled={retryingId === doc.id}
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 transition-colors cursor-pointer disabled:opacity-50"
+                              title="Retry document ingestion"
+                            >
+                              <RotateCcw className={`w-3.5 h-3.5 ${retryingId === doc.id ? 'animate-spin' : ''}`} />
+                              <span>{retryingId === doc.id ? 'Retrying...' : 'Retry'}</span>
+                            </button>
+                          )}
                           <button
                             type="button"
                             onClick={() => handleDownload(doc)}
