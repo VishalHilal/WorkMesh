@@ -6,6 +6,7 @@ from typing import Any
 from langgraph.graph import END, START, StateGraph
 
 from app.agents.knowledge_agent import knowledge_agent_node
+from app.agents.nodes.human_approval import human_approval_node
 from app.agents.office_agent import office_agent_node
 from app.agents.state import AgentState
 from app.agents.supervisor import supervisor_node
@@ -23,6 +24,14 @@ def route_supervisor(state: AgentState) -> str:
     return END
 
 
+def route_office_agent(state: AgentState) -> str:
+    """Route Office Agent output: email drafts go to human_approval_node; others finish."""
+    draft_payload = state.get("draft_payload")
+    if draft_payload:
+        return "human_approval"
+    return END
+
+
 def create_agent_graph() -> Any:
     """Build and compile the multi-agent StateGraph."""
     builder = StateGraph(AgentState)
@@ -30,6 +39,7 @@ def create_agent_graph() -> Any:
     builder.add_node("supervisor", supervisor_node)
     builder.add_node("knowledge_agent", knowledge_agent_node)
     builder.add_node("office_agent", office_agent_node)
+    builder.add_node("human_approval", human_approval_node)
 
     builder.add_edge(START, "supervisor")
     builder.add_conditional_edges(
@@ -42,7 +52,15 @@ def create_agent_graph() -> Any:
         },
     )
     builder.add_edge("knowledge_agent", END)
-    builder.add_edge("office_agent", END)
+    builder.add_conditional_edges(
+        "office_agent",
+        route_office_agent,
+        {
+            "human_approval": "human_approval",
+            END: END,
+        },
+    )
+    builder.add_edge("human_approval", END)
 
     return builder.compile()
 
@@ -85,10 +103,17 @@ def run_agent_workflow(
     citations = final_state.get("citations") or []
     iterations = final_state.get("iteration_count") or 1
 
+    pending_approval = final_state.get("pending_approval") or False
+    approval_token = final_state.get("approval_token") or None
+    draft_payload = final_state.get("draft_payload") or None
+
     return {
         "answer": answer,
         "agent_handled": agent_handled,
         "agent_path": agent_path,
         "citations": citations,
         "iterations": iterations,
+        "pending_approval": pending_approval,
+        "approval_token": approval_token,
+        "draft_payload": draft_payload,
     }
