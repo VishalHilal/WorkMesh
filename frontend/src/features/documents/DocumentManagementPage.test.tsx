@@ -305,4 +305,76 @@ describe('DocumentManagementPage', () => {
       expect(screen.getByText(/deleted successfully/i)).toBeInTheDocument()
     })
   })
+
+  it('renders a Retry button for PENDING documents and triggers retry API', async () => {
+    const pendingDoc: DocumentItem = {
+      id: 'doc_pending',
+      companyId: 'company_1',
+      uploadedById: 'user_1',
+      title: 'Pending Architecture Notes',
+      fileName: 'Notes.pdf',
+      fileSize: 2048,
+      mimeType: 'application/pdf',
+      storageKey: 'documents/company_1/notes.pdf',
+      status: 'PENDING',
+      chunkCount: 0,
+      createdAt: '2026-11-24T12:00:00.000Z',
+      updatedAt: '2026-11-24T12:00:00.000Z',
+      uploadedBy: {
+        id: 'user_1',
+        firstName: 'Priya',
+        lastName: 'Patel',
+        email: 'priya@workmesh.test',
+      },
+    }
+
+    const mockFetch = vi.fn().mockImplementation(async (url: string, options?: RequestInit) => {
+      if (url === '/api/v1/documents/doc_pending/retry' && options?.method === 'POST') {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            success: true,
+            data: { ...pendingDoc, status: 'PROCESSING' },
+          }),
+        }
+      }
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          data: [pendingDoc],
+          meta: { total: 1, page: 1, limit: 20, totalPages: 1 },
+        }),
+      }
+    })
+    vi.stubGlobal('fetch', mockFetch)
+
+    renderWithProviders(<DocumentManagementPage />)
+
+    await waitFor(() => {
+      expect(screen.getByText('Pending Architecture Notes')).toBeInTheDocument()
+    })
+
+    const retryButton = screen.getByRole('button', { name: /retry/i })
+    expect(retryButton).toBeInTheDocument()
+
+    fireEvent.click(retryButton)
+
+    await waitFor(() => {
+      expect(mockFetch).toHaveBeenCalledWith(
+        '/api/v1/documents/doc_pending/retry',
+        expect.objectContaining({ method: 'POST' })
+      )
+      expect(screen.getByText(/Status updated to Processing/i)).toBeInTheDocument()
+    })
+  })
+
+  it('displays the Live Ingestion Sync indicator when processing documents exist', async () => {
+    renderWithProviders(<DocumentManagementPage />)
+
+    await waitFor(() => {
+      expect(screen.getByText('Live Ingestion Sync')).toBeInTheDocument()
+    })
+  })
 })

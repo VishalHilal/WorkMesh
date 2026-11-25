@@ -414,4 +414,98 @@ describe('Document Upload and Management API', () => {
       expect(deleteRes.body.data.message).toBe('Document deleted successfully.')
     })
   })
+
+  describe('POST /api/v1/documents/:id/retry', () => {
+    it('rejects unauthenticated requests with 401', async () => {
+      const res = await request(server).post('/api/v1/documents/fake-doc-id/retry')
+      expect(res.status).toBe(401)
+      expect(res.body.error.code).toBe('UNAUTHORIZED')
+    })
+
+    it('returns 404 for non-existent document', async () => {
+      if (!isDbConnected) return
+
+      const res = await request(server)
+        .post('/api/v1/documents/non_existent_doc_id/retry')
+        .set('Authorization', `Bearer ${adminUserToken}`)
+
+      expect(res.status).toBe(404)
+      expect(res.body.error.code).toBe('NOT_FOUND')
+    })
+
+    it('rejects cross-tenant document retry with 404', async () => {
+      if (!isDbConnected) return
+
+      const uploadRes = await request(server)
+        .post('/api/v1/documents/upload')
+        .set('Authorization', `Bearer ${employeeUserToken}`)
+        .attach('file', Buffer.from('Cross tenant retry test content'), {
+          filename: 'cross_tenant_retry.txt',
+          contentType: 'text/plain',
+        })
+
+      if (uploadRes.status !== 201) return
+      const docId = uploadRes.body.data.id
+
+      // Company B employee tries to retry Company A's document
+      const res = await request(server)
+        .post(`/api/v1/documents/${docId}/retry`)
+        .set('Authorization', `Bearer ${employeeBToken}`)
+
+      expect(res.status).toBe(404)
+      expect(res.body.error.code).toBe('NOT_FOUND')
+    })
+
+    it('allows uploader or ADMIN to retry a PENDING document and updates status to PROCESSING', async () => {
+      if (!isDbConnected) return
+
+      // Create or upload a document that starts in PENDING
+      const uploadRes = await request(server)
+        .post('/api/v1/documents/upload')
+        .set('Authorization', `Bearer ${employeeUserToken}`)
+        .attach('file', Buffer.from('Content to be retried'), {
+          filename: 'retry_success_test.txt',
+          contentType: 'text/plain',
+        })
+
+      if (uploadRes.status !== 201) return
+      const docId = uploadRes.body.data.id
+
+      // Call retry as the uploader
+      const retryRes = await request(server)
+        .post(`/api/v1/documents/${docId}/retry`)
+        .set('Authorization', `Bearer ${employeeUserToken}`)
+
+      expect(retryRes.status).toBe(200)
+      expect(retryRes.body.success).toBe(true)
+      expect(retryRes.body.data.id).toBe(docId)
+      expect(retryRes.body.data.status).toBe(DocumentStatus.PROCESSING)
+    })
+
+    it('rejects retry for documents already in READY or PROCESSING status with 400', async () => {
+      if (!isDbConnected) return
+
+      // Manually set a document to READY
+      const doc = await prisma.document.create({
+        data: {
+          companyId: companyAId,
+          uploadedById: employeeUserId,
+          title: 'Already Ready Document',
+          fileName: 'ready_doc.txt',
+          fileSize: 100,
+          mimeType: 'text/plain',
+          storageKey: 'documents/test/ready_doc.txt',
+          status: DocumentStatus.READY,
+        },
+      })
+
+      const res = await request(server)
+        .post(`/api/v1/documents/${doc.id}/retry`)
+        .set('Authorization', `Bearer ${employeeUserToken}`)
+
+      expect(res.status).toBe(400)
+      expect(res.body.error.code).toBe('INVALID_STATUS')
+      expect(res.body.error.message).toContain('Cannot retry document in READY status')
+    })
+  })
 })

@@ -3,6 +3,7 @@ import multer from 'multer'
 import { z } from 'zod'
 import { DocumentStatus, Role } from '@prisma/client'
 import { prisma } from '../lib/db.js'
+import { env } from '../config/env.js'
 import { authenticate, getAuthenticatedCompanyId } from '../middleware/auth.middleware.js'
 import {
   uploadObject,
@@ -135,10 +136,13 @@ documentsRouter.post('/upload', handleUploadMiddleware, async (req: Request, res
     })
 
     // Trigger AI service ingestion asynchronously in the background
-    const aiServiceUrl = process.env.AI_SERVICE_URL || 'http://localhost:8000'
+    const aiServiceUrl = env.AI_SERVICE_URL || process.env.AI_SERVICE_URL || 'http://localhost:8000'
     fetch(`${aiServiceUrl}/api/v1/ingest`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Internal-Key': env.INTERNAL_API_KEY,
+      },
       body: JSON.stringify({
         document_id: document.id,
         company_id: companyId,
@@ -328,6 +332,105 @@ documentsRouter.delete('/:id', async (req: Request, res: Response, next: NextFun
       data: {
         message: 'Document deleted successfully.',
       },
+      meta: { timestamp: new Date().toISOString() },
+    })
+  } catch (err) {
+    next(err)
+  }
+})
+
+// POST /api/v1/documents/:id/retry — re-trigger document ingestion for PENDING or FAILED documents
+documentsRouter.post('/:id/retry', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const companyId = getAuthenticatedCompanyId(req)
+    const id = req.params.id as string
+
+    const document = await prisma.document.findFirst({
+      where: {
+        id,
+        companyId, // strictly enforce tenant isolation
+      },
+    })
+
+    if (!document) {
+      res.status(404).json({
+        error: {
+          code: 'NOT_FOUND',
+          message: 'Document not found.',
+        },
+        meta: { timestamp: new Date().toISOString() },
+      })
+      return
+    }
+
+    // Role check: Caller must be ADMIN, SUPER_ADMIN, or the original uploader
+    const userRole = req.user!.role
+    const isUploader = document.uploadedById === req.user!.userId
+    const isAdmin = userRole === Role.ADMIN || userRole === Role.SUPER_ADMIN
+
+    if (!isAdmin && !isUploader) {
+      res.status(403).json({
+        error: {
+          code: 'FORBIDDEN',
+          message: 'You do not have permission to retry ingestion for this document.',
+        },
+        meta: { timestamp: new Date().toISOString() },
+      })
+      return
+    }
+
+    // Status check: Only PENDING or FAILED documents can be retried
+    if (document.status === DocumentStatus.READY || document.status === DocumentStatus.PROCESSING) {
+      res.status(400).json({
+        error: {
+          code: 'INVALID_STATUS',
+          message: `Cannot retry document in ${document.status} status. Only PENDING or FAILED documents can be retried.`,
+        },
+        meta: { timestamp: new Date().toISOString() },
+      })
+      return
+    }
+
+    // Transition document status to PROCESSING and clear error message
+    const updatedDocument = await prisma.document.update({
+      where: { id: document.id },
+      data: {
+        status: DocumentStatus.PROCESSING,
+        errorMessage: null,
+      },
+      include: {
+        uploadedBy: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+          },
+        },
+      },
+    })
+
+    // Trigger AI service ingestion asynchronously in the background
+    const aiServiceUrl = env.AI_SERVICE_URL || process.env.AI_SERVICE_URL || 'http://localhost:8000'
+    fetch(`${aiServiceUrl}/api/v1/ingest`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Internal-Key': env.INTERNAL_API_KEY,
+      },
+      body: JSON.stringify({
+        document_id: document.id,
+        company_id: companyId,
+        storage_key: document.storageKey,
+        file_name: document.fileName,
+      }),
+    }).catch(() => {
+      // Non-blocking trigger — failure to reach AI service won't fail the retry response
+    })
+
+    res.status(200).json({
+      success: true,
+      data: updatedDocument,
       meta: { timestamp: new Date().toISOString() },
     })
   } catch (err) {
