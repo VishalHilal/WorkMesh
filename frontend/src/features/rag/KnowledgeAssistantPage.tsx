@@ -30,6 +30,7 @@ import {
 import { useAuth } from '../../context'
 import { AppHeader } from '../../components/AppHeader'
 import { SourceDrawer } from './SourceDrawer'
+import { EmailDraftPanel } from './EmailDraftPanel'
 import type { ChatMessage, Citation, ConversationThreadItem, ThreadDetail, RagChatResponse } from './types'
 
 const STARTER_PROMPTS = [
@@ -255,6 +256,7 @@ export function KnowledgeAssistantPage() {
         agentPath: result.data.agentPath,
         iterations: result.data.iterations,
         mode: result.data.mode || chatMode,
+        ...(result.data.draft_payload ? { draft_payload: result.data.draft_payload } : {}),
       }
 
       setMessages((prev) => [...prev, assistantMsg])
@@ -708,6 +710,14 @@ export function KnowledgeAssistantPage() {
                           ))}
                         </div>
                       </div>
+                    )}
+
+                    {/* Inline Email Draft Approval Panel */}
+                    {message.draft_payload && (
+                      <EmailDraftPanel
+                        draft={message.draft_payload}
+                        accessToken={accessToken ?? ''}
+                      />
                     )}
 
                     {/* Action Bar (Copy & Helpful Feedback) */}
