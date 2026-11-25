@@ -1,5 +1,7 @@
-import { Router, type Request, type Response } from 'express'
+import { Router, type Request, type Response, type NextFunction } from 'express'
 import { z } from 'zod'
+import { Prisma } from '@prisma/client'
+import { prisma } from '../lib/db.js'
 import { authenticate, getAuthenticatedCompanyId } from '../middleware/auth.middleware.js'
 import { sendRagChat, RagServiceError } from '../services/rag.service.js'
 import { recordAuditEvent } from '../lib/audit.js'
@@ -14,12 +16,21 @@ const chatMessageSchema = z.object({
   content: z.string().min(1, 'Message content cannot be empty'),
 })
 
+const createThreadSchema = z.object({
+  title: z.string().trim().max(120).optional(),
+})
+
+const updateThreadSchema = z.object({
+  title: z.string().trim().min(1, 'Title cannot be empty').max(120, 'Title cannot exceed 120 characters'),
+})
+
 const ragChatRequestSchema = z.object({
   query: z
     .string()
     .trim()
     .min(1, 'Query cannot be empty')
     .max(4000, 'Query cannot exceed 4000 characters'),
+  thread_id: z.string().trim().optional(),
   top_k: z.coerce.number().int().min(1).max(20).default(5),
   threshold: z.coerce.number().min(0).max(1).default(0.4),
   chat_history: z.array(chatMessageSchema).optional(),
@@ -27,11 +38,234 @@ const ragChatRequestSchema = z.object({
 })
 
 /**
+ * GET /api/v1/rag/threads
+ * List conversation threads for caller within their tenant company.
+ */
+ragRouter.get('/threads', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const companyId = getAuthenticatedCompanyId(req)
+    const userId = req.user!.userId
+
+    const threads = await prisma.conversationThread.findMany({
+      where: {
+        companyId,
+        userId,
+      },
+      orderBy: {
+        updatedAt: 'desc',
+      },
+      include: {
+        _count: {
+          select: { messages: true },
+        },
+      },
+    })
+
+    res.status(200).json({
+      success: true,
+      data: threads,
+      meta: {
+        total: threads.length,
+        timestamp: new Date().toISOString(),
+      },
+    })
+  } catch (err) {
+    next(err)
+  }
+})
+
+/**
+ * POST /api/v1/rag/threads
+ * Create a new conversation thread.
+ */
+ragRouter.post('/threads', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const companyId = getAuthenticatedCompanyId(req)
+    const userId = req.user!.userId
+
+    const parseResult = createThreadSchema.safeParse(req.body ?? {})
+    if (!parseResult.success) {
+      res.status(400).json({
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'Invalid thread creation payload.',
+          details: parseResult.error.flatten().fieldErrors,
+        },
+        meta: { timestamp: new Date().toISOString() },
+      })
+      return
+    }
+
+    const title = parseResult.data.title?.trim() || 'New Conversation'
+
+    const thread = await prisma.conversationThread.create({
+      data: {
+        companyId,
+        userId,
+        title,
+      },
+      include: {
+        _count: {
+          select: { messages: true },
+        },
+      },
+    })
+
+    res.status(201).json({
+      success: true,
+      data: thread,
+      meta: { timestamp: new Date().toISOString() },
+    })
+  } catch (err) {
+    next(err)
+  }
+})
+
+/**
+ * GET /api/v1/rag/threads/:id
+ * Retrieve a specific thread with its ordered chat messages and citations.
+ */
+ragRouter.get('/threads/:id', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const companyId = getAuthenticatedCompanyId(req)
+    const userId = req.user!.userId
+    const id = req.params.id as string
+
+    const thread = await prisma.conversationThread.findFirst({
+      where: {
+        id,
+        companyId,
+        userId,
+      },
+      include: {
+        messages: {
+          orderBy: {
+            createdAt: 'asc',
+          },
+        },
+      },
+    })
+
+    if (!thread) {
+      res.status(404).json({
+        error: {
+          code: 'NOT_FOUND',
+          message: 'Conversation thread not found.',
+        },
+        meta: { timestamp: new Date().toISOString() },
+      })
+      return
+    }
+
+    res.status(200).json({
+      success: true,
+      data: thread,
+      meta: { timestamp: new Date().toISOString() },
+    })
+  } catch (err) {
+    next(err)
+  }
+})
+
+/**
+ * PATCH /api/v1/rag/threads/:id
+ * Rename a conversation thread title.
+ */
+ragRouter.patch('/threads/:id', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const companyId = getAuthenticatedCompanyId(req)
+    const userId = req.user!.userId
+    const id = req.params.id as string
+
+    const parseResult = updateThreadSchema.safeParse(req.body)
+    if (!parseResult.success) {
+      res.status(400).json({
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'Invalid thread update payload.',
+          details: parseResult.error.flatten().fieldErrors,
+        },
+        meta: { timestamp: new Date().toISOString() },
+      })
+      return
+    }
+
+    const existing = await prisma.conversationThread.findFirst({
+      where: { id, companyId, userId },
+    })
+
+    if (!existing) {
+      res.status(404).json({
+        error: {
+          code: 'NOT_FOUND',
+          message: 'Conversation thread not found.',
+        },
+        meta: { timestamp: new Date().toISOString() },
+      })
+      return
+    }
+
+    const updated = await prisma.conversationThread.update({
+      where: { id },
+      data: { title: parseResult.data.title },
+    })
+
+    res.status(200).json({
+      success: true,
+      data: updated,
+      meta: { timestamp: new Date().toISOString() },
+    })
+  } catch (err) {
+    next(err)
+  }
+})
+
+/**
+ * DELETE /api/v1/rag/threads/:id
+ * Delete a conversation thread and all its messages.
+ */
+ragRouter.delete('/threads/:id', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const companyId = getAuthenticatedCompanyId(req)
+    const userId = req.user!.userId
+    const id = req.params.id as string
+
+    const existing = await prisma.conversationThread.findFirst({
+      where: { id, companyId, userId },
+    })
+
+    if (!existing) {
+      res.status(404).json({
+        error: {
+          code: 'NOT_FOUND',
+          message: 'Conversation thread not found.',
+        },
+        meta: { timestamp: new Date().toISOString() },
+      })
+      return
+    }
+
+    await prisma.conversationThread.delete({
+      where: { id },
+    })
+
+    res.status(200).json({
+      success: true,
+      data: { message: 'Conversation thread deleted successfully.' },
+      meta: { timestamp: new Date().toISOString() },
+    })
+  } catch (err) {
+    next(err)
+  }
+})
+
+/**
  * POST /api/v1/rag/chat
- * Tenant-scoped RAG question answering over company documents.
+ * Tenant-scoped RAG question answering over company documents with thread history persistence.
  */
 ragRouter.post('/chat', async (req: Request, res: Response) => {
   const companyId = getAuthenticatedCompanyId(req)
+  const userId = req.user!.userId
 
   const parseResult = ragChatRequestSchema.safeParse(req.body)
   if (!parseResult.success) {
@@ -46,7 +280,63 @@ ragRouter.post('/chat', async (req: Request, res: Response) => {
     return
   }
 
-  const { query, top_k, threshold, chat_history, document_ids } = parseResult.data
+  const { query, thread_id, top_k, threshold, chat_history, document_ids } = parseResult.data
+
+  let activeThreadId = thread_id
+  let historyToSend = chat_history
+
+  // If a thread_id is specified, verify ownership and optionally load recent messages
+  if (activeThreadId) {
+    const thread = await prisma.conversationThread.findFirst({
+      where: {
+        id: activeThreadId,
+        companyId,
+        userId,
+      },
+      include: {
+        messages: {
+          orderBy: { createdAt: 'desc' },
+          take: 10,
+        },
+      },
+    })
+
+    if (!thread) {
+      res.status(404).json({
+        error: {
+          code: 'NOT_FOUND',
+          message: 'Conversation thread not found.',
+        },
+        meta: { timestamp: new Date().toISOString() },
+      })
+      return
+    }
+
+    // If client didn't supply inline chat_history, use the persistent thread messages
+    if (!historyToSend && thread.messages.length > 0) {
+      historyToSend = thread.messages
+        .reverse()
+        .map((m) => ({
+          role: m.role as 'user' | 'assistant',
+          content: m.content,
+        }))
+    }
+  } else {
+    // Automatically create a new thread for this conversation session
+    try {
+      const autoTitle = query.length > 35 ? `${query.slice(0, 35).trim()}…` : query.trim()
+      const newThread = await prisma.conversationThread.create({
+        data: {
+          companyId,
+          userId,
+          title: autoTitle || 'New Conversation',
+        },
+      })
+      activeThreadId = newThread.id
+    } catch (createErr) {
+      console.warn('Failed to auto-create conversation thread:', createErr)
+    }
+  }
 
   try {
     const chatData = await sendRagChat({
@@ -54,29 +344,63 @@ ragRouter.post('/chat', async (req: Request, res: Response) => {
       query,
       top_k,
       threshold,
-      chat_history,
+      chat_history: historyToSend,
       document_ids,
     })
 
+    // Persist user message and assistant answer to thread
+    if (activeThreadId) {
+      try {
+        await prisma.$transaction([
+          prisma.threadMessage.create({
+            data: {
+              threadId: activeThreadId,
+              role: 'user',
+              content: query,
+            },
+          }),
+          prisma.threadMessage.create({
+            data: {
+              threadId: activeThreadId,
+              role: 'assistant',
+              content: chatData.answer,
+              citations: (chatData.citations as unknown as Prisma.InputJsonValue) ?? Prisma.JsonNull,
+            },
+          }),
+          prisma.conversationThread.update({
+            where: { id: activeThreadId },
+            data: { updatedAt: new Date() },
+          }),
+        ])
+      } catch (saveErr) {
+        console.warn('Failed to persist thread message:', saveErr)
+      }
+    }
+
     res.status(200).json({
       success: true,
-      data: chatData,
+      data: {
+        ...chatData,
+        thread_id: activeThreadId,
+      },
       meta: { timestamp: new Date().toISOString() },
     })
 
     void recordAuditEvent({
       companyId,
-      userId: req.user?.userId,
+      userId,
       action: 'RAG_QUERY_EXECUTED',
       entityType: 'RagChat',
+      entityId: activeThreadId ?? null,
       details: {
         queryLength: query.length,
         citationsCount: chatData.citations?.length ?? 0,
+        threadId: activeThreadId ?? null,
         top_k,
         threshold,
       },
       ipAddress: req.ip || req.socket.remoteAddress,
-    })
+    }).catch(() => {})
   } catch (err: unknown) {
     if (err instanceof RagServiceError) {
       res.status(err.statusCode).json({

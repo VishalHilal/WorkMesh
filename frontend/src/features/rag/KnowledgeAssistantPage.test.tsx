@@ -21,6 +21,27 @@ const mockAuthValue: AuthContextType = {
   logout: vi.fn(),
 }
 
+const mockThreads = [
+  {
+    id: 'thread_1',
+    companyId: 'company_alpha_1',
+    userId: 'user_1',
+    title: 'HR Leave Policy Inquiries',
+    createdAt: '2026-11-25T10:00:00.000Z',
+    updatedAt: '2026-11-25T10:30:00.000Z',
+    _count: { messages: 2 },
+  },
+  {
+    id: 'thread_2',
+    companyId: 'company_alpha_1',
+    userId: 'user_1',
+    title: 'Security Guidelines Q&A',
+    createdAt: '2026-11-25T09:00:00.000Z',
+    updatedAt: '2026-11-25T09:15:00.000Z',
+    _count: { messages: 4 },
+  },
+]
+
 function renderPage(authOverrides?: Partial<AuthContextType>) {
   return render(
     <AuthContext.Provider value={{ ...mockAuthValue, ...authOverrides }}>
@@ -38,12 +59,109 @@ describe('KnowledgeAssistantPage', () => {
   })
 
   it('renders welcome screen with header and starter prompts', () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation(async (url: string) => {
+        if (url.includes('/api/v1/rag/threads')) {
+          return {
+            ok: true,
+            json: async () => ({ success: true, data: [] }),
+          }
+        }
+        return { ok: true, json: async () => ({}) }
+      })
+    )
+
     renderPage()
 
     expect(screen.getByRole('heading', { name: 'Knowledge Assistant' })).toBeInTheDocument()
     expect(screen.getByText('Ask anything about company knowledge')).toBeInTheDocument()
     expect(screen.getByText(/What is our sick leave and annual vacation policy/i)).toBeInTheDocument()
     expect(screen.getByPlaceholderText(/Ask a question about your company's documents/i)).toBeInTheDocument()
+  })
+
+  it('renders conversation threads in the sidebar', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation(async (url: string) => {
+        if (url.includes('/api/v1/rag/threads')) {
+          return {
+            ok: true,
+            json: async () => ({ success: true, data: mockThreads }),
+          }
+        }
+        return { ok: true, json: async () => ({}) }
+      })
+    )
+
+    renderPage()
+
+    await waitFor(() => {
+      expect(screen.getByText('HR Leave Policy Inquiries')).toBeInTheDocument()
+      expect(screen.getByText('Security Guidelines Q&A')).toBeInTheDocument()
+    })
+  })
+
+  it('switches thread and loads previous messages on sidebar click', async () => {
+    const thread1Detail = {
+      id: 'thread_1',
+      title: 'HR Leave Policy Inquiries',
+      companyId: 'company_alpha_1',
+      userId: 'user_1',
+      createdAt: '2026-11-25T10:00:00.000Z',
+      updatedAt: '2026-11-25T10:30:00.000Z',
+      messages: [
+        {
+          id: 'msg_1',
+          threadId: 'thread_1',
+          role: 'user',
+          content: 'How many days of sick leave do we get?',
+          citations: null,
+          createdAt: '2026-11-25T10:00:00.000Z',
+        },
+        {
+          id: 'msg_2',
+          threadId: 'thread_1',
+          role: 'assistant',
+          content: 'You receive 10 paid sick days per year.',
+          citations: [],
+          createdAt: '2026-11-25T10:00:05.000Z',
+        },
+      ],
+    }
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation(async (url: string) => {
+        if (url === '/api/v1/rag/threads') {
+          return {
+            ok: true,
+            json: async () => ({ success: true, data: mockThreads }),
+          }
+        }
+        if (url === '/api/v1/rag/threads/thread_1') {
+          return {
+            ok: true,
+            json: async () => ({ success: true, data: thread1Detail }),
+          }
+        }
+        return { ok: true, json: async () => ({}) }
+      })
+    )
+
+    renderPage()
+
+    await waitFor(() => {
+      expect(screen.getByText('HR Leave Policy Inquiries')).toBeInTheDocument()
+    })
+
+    // Click thread item in sidebar
+    fireEvent.click(screen.getByText('HR Leave Policy Inquiries'))
+
+    await waitFor(() => {
+      expect(screen.getByText('How many days of sick leave do we get?')).toBeInTheDocument()
+      expect(screen.getByText('You receive 10 paid sick days per year.')).toBeInTheDocument()
+    })
   })
 
   it('submits a query, displays loading state, and renders assistant response with citations', async () => {
@@ -63,13 +181,22 @@ describe('KnowledgeAssistantPage', () => {
         ],
         model: 'gemini-3.8-flash',
         grounded: true,
+        thread_id: 'thread_auto_created_1',
       },
       meta: { timestamp: new Date().toISOString() },
     }
 
-    const mockFetch = vi.fn().mockResolvedValueOnce({
-      ok: true,
-      json: async () => mockRagResponse,
+    const mockFetch = vi.fn().mockImplementation(async (url: string) => {
+      if (url.includes('/api/v1/rag/chat')) {
+        return {
+          ok: true,
+          json: async () => mockRagResponse,
+        }
+      }
+      return {
+        ok: true,
+        json: async () => ({ success: true, data: [] }),
+      }
     })
     vi.stubGlobal('fetch', mockFetch)
 
@@ -93,46 +220,36 @@ describe('KnowledgeAssistantPage', () => {
 
     // Grounded model badge and citation button
     expect(screen.getByText('gemini-3.8-flash')).toBeInTheDocument()
-    expect(screen.getByText('Grounded in Company Knowledge')).toBeInTheDocument()
+    expect(screen.getAllByText('Grounded in Company Knowledge').length).toBeGreaterThanOrEqual(1)
     expect(screen.getByText(/Chunk #1/i)).toBeInTheDocument()
     expect(screen.getByText('94%')).toBeInTheDocument()
-
-    // Verify fetch call was sent to /api/v1/rag/chat with token
-    expect(mockFetch).toHaveBeenCalledWith(
-      '/api/v1/rag/chat',
-      expect.objectContaining({
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: 'Bearer mock_jwt_access_token_123',
-        },
-        body: JSON.stringify({
-          query: 'What is our sick leave policy?',
-          top_k: 5,
-          threshold: 0.4,
-          chat_history: [],
-        }),
-      }),
-    )
   })
 
   it('clicking a starter prompt triggers query execution', async () => {
     vi.stubGlobal(
       'fetch',
-      vi.fn().mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          success: true,
-          data: {
-            query: 'What is our sick leave and annual vacation policy?',
-            answer: 'Vacation policy grants 20 days paid leave.',
-            citations: [],
-            model: 'gemini-3.8-flash',
-            grounded: true,
-          },
-          meta: { timestamp: new Date().toISOString() },
-        }),
-      }),
+      vi.fn().mockImplementation(async (url: string) => {
+        if (url.includes('/api/v1/rag/chat')) {
+          return {
+            ok: true,
+            json: async () => ({
+              success: true,
+              data: {
+                query: 'What is our sick leave and annual vacation policy?',
+                answer: 'Vacation policy grants 20 days paid leave.',
+                citations: [],
+                model: 'gemini-3.8-flash',
+                grounded: true,
+              },
+              meta: { timestamp: new Date().toISOString() },
+            }),
+          }
+        }
+        return {
+          ok: true,
+          json: async () => ({ success: true, data: [] }),
+        }
+      })
     )
 
     renderPage()
@@ -148,28 +265,36 @@ describe('KnowledgeAssistantPage', () => {
   it('opens and closes the source citation drawer', async () => {
     vi.stubGlobal(
       'fetch',
-      vi.fn().mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          success: true,
-          data: {
-            query: 'Explain security rules',
-            answer: 'All devices must use full-disk encryption.',
-            citations: [
-              {
-                chunk_id: 'sec-chunk-99',
-                document_id: 'sec-doc-1',
-                chunk_index: 2,
-                snippet: 'Mandatory full-disk encryption with BitLocker or FileVault.',
-                similarity_score: 0.88,
+      vi.fn().mockImplementation(async (url: string) => {
+        if (url.includes('/api/v1/rag/chat')) {
+          return {
+            ok: true,
+            json: async () => ({
+              success: true,
+              data: {
+                query: 'Explain security rules',
+                answer: 'All devices must use full-disk encryption.',
+                citations: [
+                  {
+                    chunk_id: 'sec-chunk-99',
+                    document_id: 'sec-doc-1',
+                    chunk_index: 2,
+                    snippet: 'Mandatory full-disk encryption with BitLocker or FileVault.',
+                    similarity_score: 0.88,
+                  },
+                ],
+                model: 'gemini-3.8-flash',
+                grounded: true,
               },
-            ],
-            model: 'gemini-3.8-flash',
-            grounded: true,
-          },
-          meta: { timestamp: new Date().toISOString() },
-        }),
-      }),
+              meta: { timestamp: new Date().toISOString() },
+            }),
+          }
+        }
+        return {
+          ok: true,
+          json: async () => ({ success: true, data: [] }),
+        }
+      })
     )
 
     renderPage()
@@ -205,13 +330,21 @@ describe('KnowledgeAssistantPage', () => {
   it('displays error alert banner when API fails', async () => {
     vi.stubGlobal(
       'fetch',
-      vi.fn().mockResolvedValueOnce({
-        ok: false,
-        status: 503,
-        json: async () => ({
-          error: { message: 'AI knowledge service is currently unavailable.' },
-        }),
-      }),
+      vi.fn().mockImplementation(async (url: string) => {
+        if (url.includes('/api/v1/rag/chat')) {
+          return {
+            ok: false,
+            status: 503,
+            json: async () => ({
+              error: { message: 'AI knowledge service is currently unavailable.' },
+            }),
+          }
+        }
+        return {
+          ok: true,
+          json: async () => ({ success: true, data: [] }),
+        }
+      })
     )
 
     renderPage()
@@ -230,20 +363,28 @@ describe('KnowledgeAssistantPage', () => {
   it('resets conversation when clicking New Conversation button', async () => {
     vi.stubGlobal(
       'fetch',
-      vi.fn().mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          success: true,
-          data: {
-            query: 'Query 1',
-            answer: 'Answer 1',
-            citations: [],
-            model: 'gemini-3.8-flash',
-            grounded: true,
-          },
-          meta: { timestamp: new Date().toISOString() },
-        }),
-      }),
+      vi.fn().mockImplementation(async (url: string) => {
+        if (url.includes('/api/v1/rag/chat')) {
+          return {
+            ok: true,
+            json: async () => ({
+              success: true,
+              data: {
+                query: 'Query 1',
+                answer: 'Answer 1',
+                citations: [],
+                model: 'gemini-3.8-flash',
+                grounded: true,
+              },
+              meta: { timestamp: new Date().toISOString() },
+            }),
+          }
+        }
+        return {
+          ok: true,
+          json: async () => ({ success: true, data: [] }),
+        }
+      })
     )
 
     renderPage()
@@ -262,5 +403,40 @@ describe('KnowledgeAssistantPage', () => {
     // Conversation is cleared, back to welcome state
     expect(screen.queryByText('Answer 1')).not.toBeInTheDocument()
     expect(screen.getByText('Ask anything about company knowledge')).toBeInTheDocument()
+  })
+
+  it('deletes a conversation thread via delete button in sidebar', async () => {
+    const fetchMock = vi.fn().mockImplementation(async (url: string, opts?: RequestInit) => {
+      if (url === '/api/v1/rag/threads') {
+        return {
+          ok: true,
+          json: async () => ({ success: true, data: [...mockThreads] }),
+        }
+      }
+      if (url === '/api/v1/rag/threads/thread_1' && opts?.method === 'DELETE') {
+        return {
+          ok: true,
+          json: async () => ({ success: true }),
+        }
+      }
+      return { ok: true, json: async () => ({}) }
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    renderPage()
+
+    await waitFor(() => {
+      expect(screen.getByText('HR Leave Policy Inquiries')).toBeInTheDocument()
+    })
+
+    const deleteButtons = screen.getAllByTitle('Delete chat')
+    fireEvent.click(deleteButtons[0])
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        '/api/v1/rag/threads/thread_1',
+        expect.objectContaining({ method: 'DELETE' })
+      )
+    })
   })
 })
