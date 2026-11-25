@@ -28,3 +28,10 @@ class AgentState(TypedDict, total=False):
     citations: list[dict[str, Any]]
     agent_path: list[str]
     error: str | None
+
+    # Human-in-the-loop approval state (Phase 9 — MCP Email Tools)
+    pending_approval: bool       # True when graph is halted awaiting human confirm
+    approval_token: str | None   # UUID4 token identifying this approval request
+    approved: bool               # Set True by the approve API endpoint
+    rejected: bool               # Set True by the reject API endpoint
+    draft_payload: dict[str, Any] | None  # Structured email draft for review
