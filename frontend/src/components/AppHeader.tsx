@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../context'
 
 interface AppHeaderProps {
-  currentTab: 'workspace' | 'documents' | 'directory'
+  currentTab: 'workspace' | 'documents' | 'assistant' | 'directory'
 }
 
 export function AppHeader({ currentTab }: AppHeaderProps) {
@@ -65,6 +65,19 @@ export function AppHeader({ currentTab }: AppHeaderProps) {
                 }`}
               >
                 Documents
+              </Link>
+              <Link
+                to="/assistant"
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5 ${
+                  currentTab === 'assistant'
+                    ? 'text-indigo-600 bg-indigo-50/70'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                }`}
+              >
+                <span>AI Assistant</span>
+                <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-indigo-100 text-indigo-700 tracking-wide">
+                  RAG
+                </span>
               </Link>
               {isAdmin && (
                 <Link
