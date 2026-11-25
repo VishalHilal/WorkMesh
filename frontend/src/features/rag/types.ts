@@ -6,6 +6,14 @@ export interface Citation {
   similarity_score: number
 }
 
+export interface EmailDraftPayload {
+  approval_token: string
+  to: string
+  subject: string
+  body: string
+  cc: string[]
+}
+
 export interface ChatMessage {
   id: string
   role: 'user' | 'assistant'
@@ -18,6 +26,7 @@ export interface ChatMessage {
   agentPath?: string[]
   iterations?: number
   mode?: 'rag' | 'agent'
+  draft_payload?: EmailDraftPayload
 }
 
 export interface ConversationThreadItem {
@@ -59,6 +68,7 @@ export interface RagChatResponse {
     agentPath?: string[]
     iterations?: number
     mode?: 'rag' | 'agent'
+    draft_payload?: EmailDraftPayload
   }
   meta: {
     timestamp: string
