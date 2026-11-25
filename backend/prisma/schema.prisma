@@ -43,6 +43,7 @@ model Company {
 
   memberships Membership[]
   documents   Document[]
+  auditLogs   AuditLog[]
 
   @@map("companies")
 }
@@ -59,6 +60,7 @@ model User {
 
   memberships       Membership[]
   uploadedDocuments Document[]
+  auditLogs         AuditLog[]
 
   @@map("users")
 }
@@ -101,4 +103,23 @@ model Document {
   @@index([companyId])
   @@index([status])
   @@map("documents")
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  companyId  String
+  userId     String?
+  action     String
+  entityType String
+  entityId   String?
+  details    Json?
+  ipAddress  String?
+  createdAt  DateTime @default(now())
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user    User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([companyId, createdAt(sort: Desc)])
+  @@index([companyId, action])
+  @@map("audit_logs")
 }

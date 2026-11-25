@@ -5,6 +5,7 @@ import { prisma } from '../lib/db.js'
 import { verifyPassword, signAccessToken } from '../lib/auth.js'
 import { authenticate, getAuthenticatedCompanyId } from '../middleware/auth.middleware.js'
 import { requireRole } from '../middleware/role.middleware.js'
+import { recordAuditEvent } from '../lib/audit.js'
 
 const authRouter = Router()
 
@@ -70,6 +71,18 @@ authRouter.post('/login', loginLimiter, async (req, res, next) => {
 
     const isValidPassword = await verifyPassword(password, user.passwordHash)
     if (!isValidPassword) {
+      const primaryMembership = user.memberships.find((m) => m.company?.isActive) ?? user.memberships[0]
+      if (primaryMembership) {
+        void recordAuditEvent({
+          companyId: primaryMembership.companyId,
+          userId: user.id,
+          action: 'AUTH_LOGIN_FAILED',
+          entityType: 'User',
+          entityId: user.id,
+          details: { email: user.email, reason: 'INVALID_CREDENTIALS' },
+          ipAddress: req.ip || req.socket.remoteAddress,
+        }).catch(() => {})
+      }
       res.status(401).json({
         error: {
           code: 'INVALID_CREDENTIALS',
@@ -80,7 +93,7 @@ authRouter.post('/login', loginLimiter, async (req, res, next) => {
       return
     }
 
-    const primaryMembership = user.memberships.find((m) => m.company.isActive)
+    const primaryMembership = user.memberships.find((m) => m.company?.isActive)
     if (!primaryMembership) {
       res.status(401).json({
         error: {
@@ -97,6 +110,16 @@ authRouter.post('/login', loginLimiter, async (req, res, next) => {
       companyId: primaryMembership.companyId,
       role: primaryMembership.role,
     })
+
+    void recordAuditEvent({
+      companyId: primaryMembership.companyId,
+      userId: user.id,
+      action: 'AUTH_LOGIN_SUCCESS',
+      entityType: 'User',
+      entityId: user.id,
+      details: { email: user.email, role: primaryMembership.role },
+      ipAddress: req.ip || req.socket.remoteAddress,
+    }).catch(() => {})
 
     res.status(200).json({
       data: {

@@ -6,6 +6,7 @@ import { authRouter } from './routes/auth.routes.js'
 import { usersRouter } from './routes/user.routes.js'
 import { documentsRouter } from './routes/document.routes.js'
 import { ragRouter } from './routes/rag.routes.js'
+import { auditRouter } from './routes/audit.routes.js'
 import { errorMiddleware } from './middleware/error.middleware.js'
 
 const app = express()
@@ -40,6 +41,7 @@ app.use('/api/v1/auth', authRouter)
 app.use('/api/v1/users', usersRouter)
 app.use('/api/v1/documents', documentsRouter)
 app.use('/api/v1/rag', ragRouter)
+app.use('/api/v1/audit-logs', auditRouter)
 
 // 404 handler
 app.use((_req, res) => {

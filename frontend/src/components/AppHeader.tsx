@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../context'
 
 interface AppHeaderProps {
-  currentTab: 'workspace' | 'documents' | 'assistant' | 'directory'
+  currentTab: 'workspace' | 'documents' | 'assistant' | 'directory' | 'audit'
 }
 
 export function AppHeader({ currentTab }: AppHeaderProps) {
@@ -80,16 +80,28 @@ export function AppHeader({ currentTab }: AppHeaderProps) {
                 </span>
               </Link>
               {isAdmin && (
-                <Link
-                  to="/admin/users"
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
-                    currentTab === 'directory'
-                      ? 'text-indigo-600 bg-indigo-50/70'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-                  }`}
-                >
-                  Manage Employees →
-                </Link>
+                <>
+                  <Link
+                    to="/admin/users"
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                      currentTab === 'directory'
+                        ? 'text-indigo-600 bg-indigo-50/70'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                    }`}
+                  >
+                    Manage Employees →
+                  </Link>
+                  <Link
+                    to="/admin/audit-logs"
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                      currentTab === 'audit'
+                        ? 'text-indigo-600 bg-indigo-50/70'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                    }`}
+                  >
+                    Audit Logs
+                  </Link>
+                </>
               )}
             </nav>
           </div>

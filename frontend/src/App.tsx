@@ -7,6 +7,7 @@ import { LoginPage } from './features/auth/LoginPage'
 import { UserManagementPage } from './features/users/UserManagementPage'
 import { DocumentManagementPage } from './features/documents/DocumentManagementPage'
 import { KnowledgeAssistantPage } from './features/rag/KnowledgeAssistantPage'
+import { AuditLogsPage } from './features/audit/AuditLogsPage'
 import {
   FileText,
   Users,
@@ -63,13 +64,22 @@ function DashboardShell() {
                 <span>Document Hub</span>
               </Link>
               {isAdmin && (
-                <Link
-                  to="/admin/users"
-                  className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white text-slate-700 border border-slate-200 rounded-lg text-xs font-semibold hover:bg-slate-50 transition-colors shadow-2xs"
-                >
-                  <Users className="w-3.5 h-3.5 text-slate-500" />
-                  <span>Directory</span>
-                </Link>
+                <>
+                  <Link
+                    to="/admin/users"
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white text-slate-700 border border-slate-200 rounded-lg text-xs font-semibold hover:bg-slate-50 transition-colors shadow-2xs"
+                  >
+                    <Users className="w-3.5 h-3.5 text-slate-500" />
+                    <span>Directory</span>
+                  </Link>
+                  <Link
+                    to="/admin/audit-logs"
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white text-slate-700 border border-slate-200 rounded-lg text-xs font-semibold hover:bg-slate-50 transition-colors shadow-2xs"
+                  >
+                    <ShieldCheck className="w-3.5 h-3.5 text-slate-500" />
+                    <span>Audit Trail</span>
+                  </Link>
+                </>
               )}
             </div>
           </div>
@@ -232,6 +242,16 @@ export default function App() {
               <ProtectedRoute>
                 <AdminRoute>
                   <UserManagementPage />
+                </AdminRoute>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/audit-logs"
+            element={
+              <ProtectedRoute>
+                <AdminRoute>
+                  <AuditLogsPage />
                 </AdminRoute>
               </ProtectedRoute>
             }

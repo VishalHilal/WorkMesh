@@ -11,6 +11,7 @@ import {
   getPresignedDownloadUrl,
   buildStorageKey,
 } from '../lib/storage.js'
+import { recordAuditEvent } from '../lib/audit.js'
 
 const documentsRouter = Router()
 
@@ -156,6 +157,21 @@ documentsRouter.post('/upload', handleUploadMiddleware, async (req: Request, res
     res.status(201).json({
       data: document,
       meta: { timestamp: new Date().toISOString() },
+    })
+
+    void recordAuditEvent({
+      companyId,
+      userId: uploadedById,
+      action: 'DOCUMENT_UPLOADED',
+      entityType: 'Document',
+      entityId: document.id,
+      details: {
+        title: document.title,
+        fileName: document.fileName,
+        fileSize: document.fileSize,
+        mimeType: document.mimeType,
+      },
+      ipAddress: req.ip || req.socket.remoteAddress,
     })
   } catch (err) {
     next(err)
@@ -328,6 +344,19 @@ documentsRouter.delete('/:id', async (req: Request, res: Response, next: NextFun
       where: { id: document.id },
     })
 
+    void recordAuditEvent({
+      companyId,
+      userId: req.user!.userId,
+      action: 'DOCUMENT_DELETED',
+      entityType: 'Document',
+      entityId: document.id,
+      details: {
+        title: document.title,
+        fileName: document.fileName,
+      },
+      ipAddress: req.ip || req.socket.remoteAddress,
+    })
+
     res.status(200).json({
       data: {
         message: 'Document deleted successfully.',
@@ -432,6 +461,20 @@ documentsRouter.post('/:id/retry', async (req: Request, res: Response, next: Nex
       success: true,
       data: updatedDocument,
       meta: { timestamp: new Date().toISOString() },
+    })
+
+    void recordAuditEvent({
+      companyId,
+      userId: req.user!.userId,
+      action: 'DOCUMENT_REINGESTED',
+      entityType: 'Document',
+      entityId: document.id,
+      details: {
+        title: document.title,
+        fileName: document.fileName,
+        previousStatus: document.status,
+      },
+      ipAddress: req.ip || req.socket.remoteAddress,
     })
   } catch (err) {
     next(err)

@@ -4,6 +4,7 @@ import { Role } from '@prisma/client'
 import { prisma } from '../lib/db.js'
 import { authenticate, getAuthenticatedCompanyId } from '../middleware/auth.middleware.js'
 import { requireRole } from '../middleware/role.middleware.js'
+import { recordAuditEvent } from '../lib/audit.js'
 
 const usersRouter = Router()
 
@@ -270,6 +271,20 @@ usersRouter.patch('/:id/role', requireRole(Role.ADMIN, Role.SUPER_ADMIN), async 
     })
 
     // Structured Audit Event Logging
+    void recordAuditEvent({
+      companyId,
+      userId: caller.userId,
+      action: 'USER_ROLE_CHANGED',
+      entityType: 'User',
+      entityId: targetUserId,
+      details: {
+        previousRole: targetMembership.role,
+        newRole,
+        targetEmail: targetMembership.user.email,
+      },
+      ipAddress: req.ip || req.socket.remoteAddress,
+    })
+
     console.info(
       JSON.stringify({
         event: 'AUDIT_USER_ROLE_CHANGED',
