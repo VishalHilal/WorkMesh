@@ -7,6 +7,7 @@ import { LoginPage } from './features/auth/LoginPage'
 import { UserManagementPage } from './features/users/UserManagementPage'
 import { DocumentManagementPage } from './features/documents/DocumentManagementPage'
 import { KnowledgeAssistantPage } from './features/rag/KnowledgeAssistantPage'
+import { ReportsPage } from './features/reports/ReportsPage'
 import { AuditLogsPage } from './features/audit/AuditLogsPage'
 import {
   FileText,
@@ -233,6 +234,14 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <KnowledgeAssistantPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/reports"
+            element={
+              <ProtectedRoute>
+                <ReportsPage />
               </ProtectedRoute>
             }
           />
