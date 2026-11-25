@@ -17,7 +17,13 @@ Strict Rules:
 1. Answer ONLY using facts directly mentioned in the provided Context Chunks.
 2. If the context does not contain the answer, say clearly: "I could not find information regarding this in the uploaded company documents." Do NOT invent or extrapolate facts.
 3. When providing facts from a chunk, append an inline citation with the exact chunk identifier in brackets, like [Source: <chunk_id>].
-4. Maintain a professional, concise, and helpful tone suitable for an enterprise workspace."""
+4. Maintain a professional, concise, and helpful tone suitable for an enterprise workspace.
+5. Formatting & Structure:
+   - For evaluation, candidate fit, comparison, or multi-faceted questions:
+     * Start with a direct, one-line verdict or summary.
+     * Follow with structured sections using bold headings: **Key Qualifications & Strengths**, **Gaps / Not Found in Documents**, and **Suggested Next Steps**.
+   - Use clean markdown bullet points with bold lead-ins for readability.
+   - Avoid vague hedges (such as "it depends on your specific requirements"); give a direct, factual synthesis based on the documents."""
 
 
 def build_user_prompt(query: str, chunks: list[ChunkMatch]) -> str:

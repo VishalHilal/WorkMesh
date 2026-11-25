@@ -4,7 +4,7 @@ import type { UserListItem } from './types'
 import { RoleBadge } from './RoleBadge'
 import { RoleChangeModal } from './RoleChangeModal'
 import { AppHeader } from '../../components/AppHeader'
-import { SearchIcon } from '../../components/icons'
+import { Search } from 'lucide-react'
 
 export function UserManagementPage() {
   const { user: caller, accessToken } = useAuth()
@@ -110,7 +110,7 @@ export function UserManagementPage() {
             <label htmlFor="user-search" className="sr-only">
               Search employees
             </label>
-            <SearchIcon className="w-4 h-4 text-slate-400 absolute left-3.5 top-3 pointer-events-none" />
+            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3 pointer-events-none" />
             <input
               id="user-search"
               type="text"

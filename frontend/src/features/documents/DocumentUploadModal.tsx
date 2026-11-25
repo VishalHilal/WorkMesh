@@ -1,7 +1,7 @@
 import { useState, useRef, type FormEvent, type DragEvent, type ChangeEvent } from 'react'
+import { Upload, X } from 'lucide-react'
 import { useAuth } from '../../context'
 import type { DocumentItem } from './types'
-import { UploadIcon, CloseIcon } from '../../components/icons'
 
 interface DocumentUploadModalProps {
   isOpen: boolean
@@ -155,7 +155,7 @@ export function DocumentUploadModal({ isOpen, onClose, onSuccess }: DocumentUplo
             className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
             aria-label="Close upload modal"
           >
-            <CloseIcon className="w-5 h-5" />
+            <X className="w-5 h-5" />
           </button>
         </div>
 
@@ -202,7 +202,7 @@ export function DocumentUploadModal({ isOpen, onClose, onSuccess }: DocumentUplo
             ) : (
               <div className="space-y-2">
                 <div className="w-10 h-10 mx-auto rounded-full bg-indigo-50 border border-indigo-100 text-indigo-600 flex items-center justify-center">
-                  <UploadIcon className="w-5 h-5" />
+                  <Upload className="w-5 h-5" />
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-slate-800">
