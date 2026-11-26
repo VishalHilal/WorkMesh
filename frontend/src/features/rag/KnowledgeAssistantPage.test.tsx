@@ -514,7 +514,7 @@ describe('KnowledgeAssistantPage', () => {
                 query: 'Draft announcement',
                 answer: '### Executive Memo\n\nPlease find attached the agenda.',
                 citations: [],
-                model: 'gemini-2.5-flash',
+                model: 'gemini-3.8-flash',
                 grounded: false,
                 agentHandled: 'office_agent',
                 agentPath: ['supervisor', 'office_agent'],
