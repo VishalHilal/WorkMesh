@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '../../context'
-import { AppHeader } from '../../components/AppHeader'
+import { AppShell } from '../../components/AppShell'
 import type { AuditLogItem, AuditLogsResponse } from './types'
 import {
   ShieldAlert,
@@ -189,9 +189,7 @@ export function AuditLogsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-900 antialiased selection:bg-indigo-100 selection:text-indigo-900">
-      <AppHeader currentTab="audit" />
-
+    <AppShell currentTab="audit">
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full space-y-6">
         {/* Page Header */}
         <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-2xs">
@@ -500,6 +498,6 @@ export function AuditLogsPage() {
           </div>
         )}
       </main>
-    </div>
+    </AppShell>
   )
 }

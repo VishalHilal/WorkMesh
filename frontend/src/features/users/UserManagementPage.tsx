@@ -3,7 +3,7 @@ import { useAuth } from '../../context'
 import type { UserListItem } from './types'
 import { RoleBadge } from './RoleBadge'
 import { RoleChangeModal } from './RoleChangeModal'
-import { AppHeader } from '../../components/AppHeader'
+import { AppShell } from '../../components/AppShell'
 import { Search } from 'lucide-react'
 
 export function UserManagementPage() {
@@ -67,10 +67,7 @@ export function UserManagementPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-900 antialiased selection:bg-indigo-100 selection:text-indigo-900">
-      {/* Enterprise Unified Header */}
-      <AppHeader currentTab="directory" />
-
+    <AppShell currentTab="directory">
       {/* Main Content */}
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 w-full flex-1">
         <div className="sm:flex sm:items-center sm:justify-between">
@@ -228,6 +225,6 @@ export function UserManagementPage() {
           onSuccess={handleRoleUpdated}
         />
       )}
-    </div>
+    </AppShell>
   )
 }

@@ -2,7 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate, Link } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { AdminRoute } from './components/AdminRoute'
-import { AppHeader } from './components/AppHeader'
+import { AppShell } from './components/AppShell'
 import { LoginPage } from './features/auth/LoginPage'
 import { UserManagementPage } from './features/users/UserManagementPage'
 import { DocumentManagementPage } from './features/documents/DocumentManagementPage'
@@ -11,199 +11,261 @@ import { ReportsPage } from './features/reports/ReportsPage'
 import { AuditLogsPage } from './features/audit/AuditLogsPage'
 import {
   FileText,
-  Users,
-  Database,
-  ShieldCheck,
   Sparkles,
-  Cpu,
+  FileBarChart2,
+  Building2,
+  ShieldCheck,
+  CheckCircle2,
+  Upload,
+  FolderOpen,
+  History,
+  ArrowRight,
+  Mail,
 } from 'lucide-react'
 import './App.css'
+
+function getTimeGreeting(): string {
+  const hour = new Date().getHours()
+  if (hour < 12) return 'Good morning'
+  if (hour < 18) return 'Good afternoon'
+  return 'Good evening'
+}
 
 function DashboardShell() {
   const { user } = useAuth()
   const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN'
+  const firstName = user?.firstName ?? 'Employee'
+
+  const recentActivity = [
+    {
+      id: 'act_1',
+      label: 'Knowledge Base indexed & ready for semantic search',
+      time: 'Just now',
+      to: '/documents',
+      icon: FileText,
+      tone: 'bg-indigo-50 text-indigo-600',
+    },
+    {
+      id: 'act_2',
+      label: 'Generate executive PDF & DOCX reports from company docs',
+      time: 'Reports Hub',
+      to: '/reports',
+      icon: FileBarChart2,
+      tone: 'bg-violet-50 text-violet-600',
+    },
+    {
+      id: 'act_3',
+      label: 'Draft internal emails with human-in-the-loop approval',
+      time: 'Office Agent',
+      to: '/assistant',
+      icon: Mail,
+      tone: 'bg-amber-50 text-amber-600',
+    },
+    {
+      id: 'act_4',
+      label: 'Ask grounded questions with verifiable source citations',
+      time: 'AI Assistant',
+      to: '/assistant',
+      icon: Sparkles,
+      tone: 'bg-emerald-50 text-emerald-600',
+    },
+  ]
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-900 antialiased selection:bg-indigo-100 selection:text-indigo-900">
-      {/* Enterprise Unified Header */}
-      <AppHeader currentTab="workspace" />
+    <AppShell currentTab="workspace">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full space-y-8">
+        {/* Hero Greeting Card */}
+        <section
+          aria-labelledby="workmesh-heading"
+          className="relative overflow-hidden rounded-2xl border border-indigo-100 bg-gradient-to-br from-white via-indigo-50/50 to-violet-100/60 p-6 sm:p-8 shadow-xs"
+        >
+          {/* Subtle branded network SVG backdrop */}
+          <svg
+            aria-hidden="true"
+            className="pointer-events-none absolute right-0 top-0 h-full w-1/2 opacity-30 text-indigo-300 hidden md:block"
+            viewBox="0 0 400 220"
+            fill="none"
+          >
+            <circle cx="280" cy="48" r="4" fill="currentColor" />
+            <circle cx="350" cy="85" r="5" fill="currentColor" />
+            <circle cx="240" cy="120" r="4" fill="currentColor" />
+            <circle cx="320" cy="160" r="5" fill="currentColor" />
+            <circle cx="375" cy="35" r="3" fill="currentColor" />
+            <path
+              d="M280 48L350 85M280 48L240 120M350 85L320 160M240 120L320 160M350 85L375 35M280 48L375 35"
+              stroke="currentColor"
+              strokeWidth="1.2"
+            />
+          </svg>
 
-      {/* Main Workspace Canvas */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full space-y-6">
-        {/* Workspace Summary Bar */}
-        <section aria-labelledby="workmesh-heading" className="bg-white rounded-xl p-6 border border-slate-200 shadow-2xs">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="relative z-10 max-w-3xl space-y-5">
             <div>
-              <div className="flex items-center gap-2 mb-1.5">
-                <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                <span className="text-[11px] font-semibold text-emerald-800 tracking-wide">
-                  WorkMesh Enterprise Workspace
-                </span>
-              </div>
-              <h1 id="workmesh-heading" className="text-2xl font-bold tracking-tight text-slate-900">
-                Your company workspace, connected.
+              <h1
+                id="workmesh-heading"
+                className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900"
+              >
+                {getTimeGreeting()}, {firstName} 👋
               </h1>
-              <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-2xl">
-                Welcome back, {user?.firstName ?? 'Employee'} ({user?.role?.replace('_', ' ')}). The
-                employee productivity workspace is ready.
+              <h2 className="sr-only">Your company workspace, connected.</h2>
+              <p className="text-sm sm:text-base text-slate-600 mt-2 leading-relaxed">
+                Welcome back, {firstName}. Find answers, organize company knowledge, and move work forward.
               </p>
             </div>
 
+            <div className="flex flex-wrap items-center gap-3">
+              <Link
+                to="/assistant"
+                className="inline-flex items-center gap-2 px-4 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700 transition-colors shadow-xs"
+              >
+                <Sparkles className="w-4 h-4" />
+                <span>Ask AI Assistant</span>
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+              <Link
+                to="/documents"
+                className="inline-flex items-center gap-2 px-4 py-2.5 bg-white text-slate-700 border border-indigo-200/80 rounded-xl text-sm font-semibold hover:bg-indigo-50/50 transition-colors shadow-2xs"
+              >
+                <Upload className="w-4 h-4 text-indigo-600" />
+                <span>Upload Document</span>
+              </Link>
+              <Link
+                to="/reports"
+                className="inline-flex items-center gap-2 px-4 py-2.5 bg-white text-slate-700 border border-indigo-200/80 rounded-xl text-sm font-semibold hover:bg-indigo-50/50 transition-colors shadow-2xs"
+              >
+                <FileBarChart2 className="w-4 h-4 text-indigo-600" />
+                <span>Generate Report</span>
+              </Link>
+              <Link
+                to="/documents"
+                className="inline-flex items-center gap-2 px-4 py-2.5 bg-white text-slate-700 border border-indigo-200/80 rounded-xl text-sm font-semibold hover:bg-indigo-50/50 transition-colors shadow-2xs"
+              >
+                <FolderOpen className="w-4 h-4 text-indigo-600" />
+                <span>View Documents</span>
+              </Link>
+            </div>
+          </div>
+        </section>
+
+        {/* Operational Status & Employee-Facing Metrics */}
+        <section aria-labelledby="status-grid" className="space-y-4">
+          <div className="flex flex-wrap items-center gap-3">
+            <h2 id="status-grid" className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">
+              Operational status
+            </h2>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/80">
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+              All systems operational
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="bg-white p-5 rounded-2xl border border-indigo-100/80 shadow-2xs space-y-3">
+              <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                <FileText className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-slate-500">Documents Indexed</p>
+                <p className="text-base font-bold text-emerald-700 mt-0.5 flex items-center gap-1.5">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                  Ready to search
+                </p>
+                <p className="text-xs text-slate-500 mt-1">PDF, DOCX &amp; TXT knowledge base</p>
+              </div>
+            </div>
+
+            <div className="bg-white p-5 rounded-2xl border border-indigo-100/80 shadow-2xs space-y-3">
+              <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                <Sparkles className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-slate-500">AI Knowledge Engine</p>
+                <p className="text-base font-bold text-emerald-700 mt-0.5 flex items-center gap-1.5">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                  Online
+                </p>
+                <p className="text-xs text-slate-500 mt-1">RAG citations + Office workflows</p>
+              </div>
+            </div>
+
+            <div className="bg-white p-5 rounded-2xl border border-indigo-100/80 shadow-2xs space-y-3">
+              <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                <ShieldCheck className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-slate-500">Access &amp; Security</p>
+                <p className="text-base font-bold text-emerald-700 mt-0.5 flex items-center gap-1.5">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                  Protected
+                </p>
+                <p className="text-xs text-slate-500 mt-1">JWT · Role-based permissions</p>
+              </div>
+            </div>
+
+            <div className="bg-white p-5 rounded-2xl border border-indigo-100/80 shadow-2xs space-y-3">
+              <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                <Building2 className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-slate-500">Tenant Workspace</p>
+                <p className="text-base font-bold text-slate-900 mt-0.5">WorkMesh Technologies</p>
+                <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200/70">
+                  <CheckCircle2 className="w-3 h-3" />
+                  Active · Isolated
+                </span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Recent Activity Panel */}
+        <section
+          aria-labelledby="recent-activity-heading"
+          className="bg-white rounded-2xl border border-indigo-100/80 shadow-2xs overflow-hidden"
+        >
+          <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Link
-                to="/assistant"
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-indigo-600 text-white rounded-lg text-xs font-semibold hover:bg-indigo-700 transition-colors shadow-2xs"
-              >
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>AI Assistant</span>
-              </Link>
-              <Link
-                to="/documents"
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white text-slate-700 border border-slate-200 rounded-lg text-xs font-semibold hover:bg-slate-50 transition-colors shadow-2xs"
-              >
-                <FileText className="w-3.5 h-3.5 text-slate-500" />
-                <span>Document Hub</span>
-              </Link>
-              {isAdmin && (
-                <>
+              <History className="w-4 h-4 text-slate-500" />
+              <h2 id="recent-activity-heading" className="text-base font-bold text-slate-900">
+                Recent activity
+              </h2>
+            </div>
+            <Link
+              to={isAdmin ? '/admin/audit-logs' : '/documents'}
+              className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-600 hover:text-indigo-800"
+            >
+              <span>View all</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+
+          <ul className="divide-y divide-slate-100">
+            {recentActivity.map((item) => {
+              const Icon = item.icon
+              return (
+                <li key={item.id}>
                   <Link
-                    to="/admin/users"
-                    className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white text-slate-700 border border-slate-200 rounded-lg text-xs font-semibold hover:bg-slate-50 transition-colors shadow-2xs"
+                    to={item.to}
+                    className="px-6 py-3.5 flex items-center justify-between gap-4 hover:bg-indigo-50/40 transition-colors"
                   >
-                    <Users className="w-3.5 h-3.5 text-slate-500" />
-                    <span>Directory</span>
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div
+                        className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${item.tone}`}
+                      >
+                        <Icon className="w-4 h-4" />
+                      </div>
+                      <span className="text-sm font-medium text-slate-800 truncate">
+                        {item.label}
+                      </span>
+                    </div>
+                    <span className="text-xs text-slate-400 shrink-0">{item.time}</span>
                   </Link>
-                  <Link
-                    to="/admin/audit-logs"
-                    className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white text-slate-700 border border-slate-200 rounded-lg text-xs font-semibold hover:bg-slate-50 transition-colors shadow-2xs"
-                  >
-                    <ShieldCheck className="w-3.5 h-3.5 text-slate-500" />
-                    <span>Audit Trail</span>
-                  </Link>
-                </>
-              )}
-            </div>
-          </div>
-        </section>
-
-        {/* Operational Status Grid */}
-        <section aria-labelledby="status-grid" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <h2 id="status-grid" className="sr-only">System Status</h2>
-          
-          <div className="bg-white p-4.5 rounded-xl border border-slate-200 shadow-2xs">
-            <div className="flex items-center justify-between text-slate-400 mb-1.5">
-              <span className="text-[11px] font-semibold text-slate-500">Knowledge Storage</span>
-              <Database className="w-4 h-4 text-slate-400" />
-            </div>
-            <p className="text-base font-bold text-slate-900">Neon Object Storage</p>
-            <p className="text-xs text-slate-500 mt-1 flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-              S3 Path-Style Bucket
-            </p>
-          </div>
-
-          <div className="bg-white p-4.5 rounded-xl border border-slate-200 shadow-2xs">
-            <div className="flex items-center justify-between text-slate-400 mb-1.5">
-              <span className="text-[11px] font-semibold text-slate-500">Vector Index Engine</span>
-              <Sparkles className="w-4 h-4 text-indigo-500" />
-            </div>
-            <p className="text-base font-bold text-slate-900">pgvector HNSW</p>
-            <p className="text-xs text-slate-500 mt-1 flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-              768-dimensional cosine index
-            </p>
-          </div>
-
-          <div className="bg-white p-4.5 rounded-xl border border-slate-200 shadow-2xs">
-            <div className="flex items-center justify-between text-slate-400 mb-1.5">
-              <span className="text-[11px] font-semibold text-slate-500">Tenancy Boundary</span>
-              <ShieldCheck className="w-4 h-4 text-slate-400" />
-            </div>
-            <p className="text-base font-bold text-slate-900">Tenant Scoped</p>
-            <p className="text-xs text-slate-500 mt-1 flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-              Company ID partitioned
-            </p>
-          </div>
-
-          <div className="bg-white p-4.5 rounded-xl border border-slate-200 shadow-2xs">
-            <div className="flex items-center justify-between text-slate-400 mb-1.5">
-              <span className="text-[11px] font-semibold text-slate-500">AI Ingestion Pipeline</span>
-              <Cpu className="w-4 h-4 text-slate-400" />
-            </div>
-            <p className="text-base font-bold text-slate-900">FastAPI & MiniLM</p>
-            <p className="text-xs text-slate-500 mt-1 flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-              Ingestion online
-            </p>
-          </div>
-        </section>
-
-        {/* Work Hub Features */}
-        <section aria-labelledby="hub-heading" className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          <h2 id="hub-heading" className="sr-only">Workspace Features</h2>
-
-          {/* Document Management Card */}
-          <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-2xs flex flex-col justify-between">
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-200/60">
-                  Document Knowledge Base
-                </span>
-                <span className="text-xs font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200/60 flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                  Active
-                </span>
-              </div>
-              <h3 className="text-base font-bold text-slate-900">
-                Upload & Ingest Organizational Knowledge
-              </h3>
-              <p className="text-xs text-slate-600 mt-2 leading-relaxed">
-                Add PDFs, Word documents, and text files. The AI service automatically extracts text, produces semantic chunks, and builds vector embeddings for search.
-              </p>
-            </div>
-            <div className="mt-5 pt-4 border-t border-slate-100 flex items-center justify-between">
-              <span className="text-xs text-slate-500 font-mono">PDF • DOCX • TXT (max 10MB)</span>
-              <Link
-                to="/documents"
-                className="text-xs font-semibold text-indigo-600 hover:text-indigo-800"
-              >
-                Go to documents →
-              </Link>
-            </div>
-          </div>
-
-          {/* RAG Agent Live Card */}
-          <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-2xs flex flex-col justify-between">
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-200">
-                  RAG Knowledge Assistant
-                </span>
-                <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200/60">
-                  Live & Connected
-                </span>
-              </div>
-              <h3 className="text-base font-bold text-slate-900">
-                Natural Language Knowledge Search
-              </h3>
-              <p className="text-xs text-slate-600 mt-2 leading-relaxed">
-                Ask questions about your company's indexed policies and get cited, hallucination-resistant answers powered by vector similarity search and Google Gemini.
-              </p>
-            </div>
-            <div className="mt-5 pt-4 border-t border-slate-100 flex items-center justify-between">
-              <span className="text-xs text-slate-400">Gemini Flash + pgvector</span>
-              <Link
-                to="/assistant"
-                className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition-colors flex items-center gap-1"
-              >
-                Launch Assistant →
-              </Link>
-            </div>
-          </div>
+                </li>
+              )
+            })}
+          </ul>
         </section>
       </main>
-    </div>
+    </AppShell>
   )
 }
 

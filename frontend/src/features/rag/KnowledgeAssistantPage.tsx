@@ -28,7 +28,7 @@ import {
   Workflow,
 } from 'lucide-react'
 import { useAuth } from '../../context'
-import { AppHeader } from '../../components/AppHeader'
+import { AppShell } from '../../components/AppShell'
 import { SourceDrawer } from './SourceDrawer'
 import { EmailDraftPanel } from './EmailDraftPanel'
 import type { ChatMessage, Citation, ConversationThreadItem, ThreadDetail, RagChatResponse } from './types'
@@ -307,9 +307,7 @@ export function KnowledgeAssistantPage() {
   const activeThread = threads.find((t) => t.id === activeThreadId)
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-900 antialiased selection:bg-indigo-100 selection:text-indigo-900">
-      <AppHeader currentTab="assistant" />
-
+    <AppShell currentTab="assistant">
       {/* Main Workspace with Thread Sidebar & Chat Container */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full flex gap-4 min-h-0">
         {/* Left Sidebar: Conversation Threads */}
@@ -862,6 +860,6 @@ export function KnowledgeAssistantPage() {
 
       {/* Slide-over Source Drawer */}
       <SourceDrawer citation={selectedCitation} onClose={() => setSelectedCitation(null)} />
-    </div>
+    </AppShell>
   )
 }
