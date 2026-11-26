@@ -42,3 +42,16 @@
 1. **Check `/api/v1/health/ready`**: Identify whether `database` or `aiService` is reporting `"error"`.
 2. **Trace with `X-Request-Id`**: Every HTTP response and error envelope (`meta.requestId`) carries the correlation ID; grep structured `HTTP_REQUEST` logs by `requestId`.
 3. **Audit Trail Inspection**: Admins can inspect `EMAIL_DRAFT_*`, `REPORT_*`, `DOCUMENT_*`, and auth events via **Audit Logs** (`/admin/audit-logs`).
+
+---
+
+## 5. Full-Stack Docker Compose Quickstart
+
+```bash
+cp .env.docker.example .env
+docker compose up --build -d
+```
+
+- **Frontend**: `http://localhost:3000`
+- **Backend API**: `http://localhost:4000` (`/api/v1/health/ready`)
+- **AI Service**: `http://localhost:8000` (`/api/v1/health`)

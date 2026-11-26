@@ -1,0 +1,93 @@
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    container_name: workmesh-pgvector
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-workmesh_dev_pw}
+      POSTGRES_DB: ${POSTGRES_DB:-workmesh}
+    ports:
+      - "5432:5432"
+    volumes:
+      - workmesh_pgdata:/var/lib/postgresql/data
+    networks:
+      - workmesh-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-workmesh}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  ai-service:
+    build:
+      context: ./ai-service
+      dockerfile: Dockerfile
+    container_name: workmesh-ai-service
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-workmesh_dev_pw}@db:5432/${POSTGRES_DB:-workmesh}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:-workmesh-internal-secret-2026-prod-xyz}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      AWS_ENDPOINT_URL_S3: ${AWS_ENDPOINT_URL_S3:-}
+      AWS_REGION: ${AWS_REGION:-us-east-2}
+      NEON_STORAGE_BUCKET: ${NEON_STORAGE_BUCKET:-assets}
+    ports:
+      - "8000:8000"
+    networks:
+      - workmesh-net
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: workmesh-backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      ai-service:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-workmesh_dev_pw}@db:5432/${POSTGRES_DB:-workmesh}
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-workmesh_dev_jwt_access_secret_32chars_long!}
+      AI_SERVICE_URL: http://ai-service:8000
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:-workmesh-internal-secret-2026-prod-xyz}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000,http://127.0.0.1:3000}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      AWS_ENDPOINT_URL_S3: ${AWS_ENDPOINT_URL_S3:-}
+      AWS_REGION: ${AWS_REGION:-us-east-2}
+      NEON_STORAGE_BUCKET: ${NEON_STORAGE_BUCKET:-assets}
+    ports:
+      - "4000:4000"
+    networks:
+      - workmesh-net
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: workmesh-frontend
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "3000:80"
+    networks:
+      - workmesh-net
+
+volumes:
+  workmesh_pgdata:
+
+networks:
+  workmesh-net:
+    driver: bridge
