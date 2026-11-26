@@ -195,11 +195,11 @@ describe('Authentication & Protected Routes', () => {
 
     // Admin link should be visible
     await waitFor(() => {
-      expect(screen.getByText('Manage Employees →')).toBeInTheDocument()
+      expect(screen.getByText('Manage Employees')).toBeInTheDocument()
     })
 
     // Click Manage Employees link
-    fireEvent.click(screen.getByText('Manage Employees →'))
+    fireEvent.click(screen.getByText('Manage Employees'))
 
     // Should render Employee Directory table
     await waitFor(() => {

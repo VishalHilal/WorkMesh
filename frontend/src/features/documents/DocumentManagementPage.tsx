@@ -3,7 +3,7 @@ import { useAuth } from '../../context'
 import type { DocumentItem } from './types'
 import { DocumentStatusBadge } from './DocumentStatusBadge'
 import { DocumentUploadModal } from './DocumentUploadModal'
-import { AppHeader } from '../../components/AppHeader'
+import { AppShell } from '../../components/AppShell'
 import {
   FileText,
   Upload,
@@ -202,10 +202,7 @@ export function DocumentManagementPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-900 antialiased selection:bg-indigo-100 selection:text-indigo-900">
-      {/* Enterprise Unified Header */}
-      <AppHeader currentTab="documents" />
-
+    <AppShell currentTab="documents">
       {/* Main Content Area */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full">
         {/* Title & Primary Action */}
@@ -411,6 +408,6 @@ export function DocumentManagementPage() {
         onClose={() => setIsUploadModalOpen(false)}
         onSuccess={handleDocumentUploaded}
       />
-    </div>
+    </AppShell>
   )
 }

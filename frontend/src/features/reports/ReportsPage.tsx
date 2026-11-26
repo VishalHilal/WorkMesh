@@ -11,7 +11,7 @@ import {
   X,
 } from 'lucide-react'
 import { useAuth } from '../../context'
-import { AppHeader } from '../../components/AppHeader'
+import { AppShell } from '../../components/AppShell'
 import type { GeneratedReportItem, ReportFormat, ReportTemplate } from './types'
 
 const TEMPLATE_LABELS: Record<string, string> = {
@@ -186,9 +186,7 @@ export function ReportsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-900 antialiased">
-      <AppHeader currentTab="reports" />
-
+    <AppShell currentTab="reports">
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full space-y-6">
         {/* Page Header */}
         <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-2xs flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -433,6 +431,6 @@ export function ReportsPage() {
           </section>
         </div>
       </main>
-    </div>
+    </AppShell>
   )
 }

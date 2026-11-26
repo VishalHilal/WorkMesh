@@ -157,15 +157,15 @@ test.describe('WorkMesh Enterprise E2E Smoke Suite', () => {
 
     await expect(page.getByText(/Your company workspace, connected/i)).toBeVisible()
 
-    await page.getByRole('link', { name: 'Documents', exact: true }).click()
+    await page.getByRole('navigation', { name: 'Main navigation' }).getByRole('link', { name: 'Documents', exact: true }).click()
     await expect(page).toHaveURL(/\/documents$/)
     await expect(page.getByText('Employee Handbook 2026')).toBeVisible()
 
-    await page.locator('header').getByRole('link', { name: /AI Assistant/i }).click()
+    await page.getByRole('navigation', { name: 'Main navigation' }).getByRole('link', { name: 'AI Assistant', exact: true }).click()
     await expect(page).toHaveURL(/\/assistant$/)
     await expect(page.getByRole('heading', { name: 'Knowledge Assistant' })).toBeVisible()
 
-    await page.getByRole('link', { name: 'Reports', exact: true }).click()
+    await page.getByRole('navigation', { name: 'Main navigation' }).getByRole('link', { name: 'Reports', exact: true }).click()
     await expect(page).toHaveURL(/\/reports$/)
     await expect(page.getByRole('heading', { name: 'Report Generation' })).toBeVisible()
   })
@@ -174,7 +174,7 @@ test.describe('WorkMesh Enterprise E2E Smoke Suite', () => {
     await setupApiMocks(page)
     await loginAsEmployee(page)
 
-    await page.locator('header').getByRole('link', { name: /AI Assistant/i }).click()
+    await page.getByRole('navigation', { name: 'Main navigation' }).getByRole('link', { name: 'AI Assistant', exact: true }).click()
     const input = page.getByPlaceholder(/Ask a question about your company's documents/i)
     await input.fill('Email HR about sick leave')
     await input.press('Enter')
@@ -190,7 +190,7 @@ test.describe('WorkMesh Enterprise E2E Smoke Suite', () => {
     await setupApiMocks(page)
     await loginAsEmployee(page)
 
-    await page.getByRole('link', { name: 'Reports', exact: true }).click()
+    await page.getByRole('navigation', { name: 'Main navigation' }).getByRole('link', { name: 'Reports', exact: true }).click()
     await page.getByLabel(/Report Title/i).fill('Q4 E2E Policy Brief')
     await page.getByLabel(/Topic & Synthesis Instructions/i).fill('Summarize Q4 remote work policy')
     await page.getByRole('button', { name: /Generate Report/i }).click()
