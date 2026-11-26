@@ -36,7 +36,7 @@ class Settings(BaseSettings):
 
     # Google Gemini LLM configuration
     gemini_api_key: str = ""
-    gemini_model: str = "gemini-3.8-flash"
+    gemini_model: str = "gemini-3.5-flash-lite"
     gemini_api_base_url: str = "https://generativelanguage.googleapis.com/v1beta"
 
 
