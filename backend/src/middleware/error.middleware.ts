@@ -7,7 +7,7 @@ interface AppError extends Error {
 
 export function errorMiddleware(
   err: AppError,
-  _req: Request,
+  req: Request,
   res: Response,
   _next: NextFunction,
 ): void {
@@ -22,6 +22,9 @@ export function errorMiddleware(
       code: statusCode >= 500 ? 'INTERNAL_ERROR' : 'REQUEST_ERROR',
       message,
     },
-    meta: { timestamp: new Date().toISOString() },
+    meta: {
+      timestamp: new Date().toISOString(),
+      ...(req.requestId ? { requestId: req.requestId } : {}),
+    },
   })
 }
