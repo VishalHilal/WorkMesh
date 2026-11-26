@@ -1,6 +1,7 @@
 import express from 'express'
 import cors from 'cors'
 import helmet from 'helmet'
+import { env } from './config/env.js'
 import { healthRouter } from './routes/health.routes.js'
 import { authRouter } from './routes/auth.routes.js'
 import { usersRouter } from './routes/user.routes.js'
@@ -9,6 +10,7 @@ import { ragRouter } from './routes/rag.routes.js'
 import { auditRouter } from './routes/audit.routes.js'
 import { emailRouter } from './routes/email.routes.js'
 import { reportRouter } from './routes/report.routes.js'
+import { requestIdMiddleware } from './middleware/requestId.middleware.js'
 import { errorMiddleware } from './middleware/error.middleware.js'
 
 const app = express()
@@ -16,10 +18,25 @@ const app = express()
 // Trust reverse proxy (e.g., Render, Vercel, Cloudflare) for rate limiting & accurate client IP
 app.set('trust proxy', 1)
 
+const allowedOrigins = env.CORS_ORIGINS.split(',')
+  .map((o) => o.trim())
+  .filter(Boolean)
 
+app.use(requestIdMiddleware)
 app.use(helmet())
-app.use(cors())
-app.use(express.json())
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true)
+        return
+      }
+      callback(null, false)
+    },
+    credentials: true,
+  })
+)
+app.use(express.json({ limit: '1mb' }))
 
 // Routes
 app.get('/', (_req, res) => {

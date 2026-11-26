@@ -28,6 +28,9 @@ const envSchema = z.object({
   // AI Service
   AI_SERVICE_URL: z.string().default('http://localhost:8000'),
   INTERNAL_API_KEY: z.string().default('workmesh-internal-secret-2026-prod-xyz'),
+
+  // Security / CORS
+  CORS_ORIGINS: z.string().default('http://localhost:3000,http://localhost:5173'),
 })
 
 const parsed = envSchema.safeParse(process.env)
