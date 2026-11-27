@@ -5,6 +5,11 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.schemas.chat import ChatData, ChatMessage, Citation
 from app.schemas.retrieve import ChunkMatch
+from app.services.guardrails import (
+    SAFE_REFUSAL_MESSAGE,
+    redact_sensitive_output,
+    validate_user_input,
+)
 from app.services.llm import call_gemini_api
 from app.services.retriever import retrieve_relevant_chunks
 
@@ -74,6 +79,22 @@ def run_rag_pipeline(
     document_ids: list[str] | None = None,
 ) -> ChatData:
     """Run full RAG pipeline: multi-tenant retrieval, prompt augmentation, and Gemini LLM synthesis."""
+    # 0. Pre-LLM input guardrail
+    guard = validate_user_input(query)
+    if not guard.allowed:
+        logger.warning(
+            "RAG input guardrail triggered for company '%s' (rule=%s)",
+            company_id,
+            guard.rule,
+        )
+        return ChatData(
+            query=query,
+            answer=SAFE_REFUSAL_MESSAGE,
+            citations=[],
+            model=settings.gemini_model,
+            grounded=False,
+        )
+
     # 1. Retrieve top-k relevant document chunks for the company
     chunks = retrieve_relevant_chunks(
         session=session,
@@ -107,11 +128,18 @@ def run_rag_pipeline(
     user_prompt = build_user_prompt(query, chunks)
 
     # 4. Invoke Google Gemini Flash
-    answer = call_gemini_api(
+    raw_answer = call_gemini_api(
         system_prompt=SYSTEM_PROMPT,
         user_prompt=user_prompt,
         chat_history=chat_history,
     )
+    answer, redacted_rules = redact_sensitive_output(raw_answer)
+    if redacted_rules:
+        logger.warning(
+            "Redacted sensitive output in RAG response for company '%s' (rules=%s)",
+            company_id,
+            redacted_rules,
+        )
 
     # 5. Build structured citations
     citations = build_citations(chunks, answer)
