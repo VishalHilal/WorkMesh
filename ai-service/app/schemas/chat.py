@@ -1,3 +1,5 @@
+from typing import Any
+
 from pydantic import BaseModel, Field
 
 
@@ -44,6 +46,7 @@ class ChatData(BaseModel):
     citations: list[Citation]
     model: str
     grounded: bool
+    usage: dict[str, Any] | None = None
 
 
 class ChatResponse(BaseModel):

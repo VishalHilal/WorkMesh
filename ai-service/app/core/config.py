@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -39,5 +40,24 @@ class Settings(BaseSettings):
     gemini_model: str = "gemini-3.5-flash-lite"
     gemini_api_base_url: str = "https://generativelanguage.googleapis.com/v1beta"
 
+    # LangSmith observability (free developer tier supported)
+    langsmith_tracing: bool = False
+    langsmith_api_key: str = ""
+    langsmith_project: str = "workmesh-ai"
+
 
 settings = Settings()
+
+
+def configure_langsmith_env() -> None:
+    """Propagate LangSmith settings into process environment when tracing is enabled."""
+    if settings.langsmith_tracing and settings.langsmith_api_key:
+        os.environ.setdefault("LANGCHAIN_TRACING_V2", "true")
+        os.environ.setdefault("LANGCHAIN_API_KEY", settings.langsmith_api_key)
+        os.environ.setdefault("LANGCHAIN_PROJECT", settings.langsmith_project)
+        os.environ.setdefault("LANGSMITH_TRACING", "true")
+        os.environ.setdefault("LANGSMITH_API_KEY", settings.langsmith_api_key)
+        os.environ.setdefault("LANGSMITH_PROJECT", settings.langsmith_project)
+
+
+configure_langsmith_env()

@@ -1,5 +1,6 @@
 import logging
 
+from langsmith import traceable
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -10,6 +11,7 @@ from app.services.embeddings import generate_embeddings
 logger = logging.getLogger(__name__)
 
 
+@traceable(run_type="retriever", name="pgvector_retrieve")
 def retrieve_relevant_chunks(
     session: Session,
     company_id: str,
