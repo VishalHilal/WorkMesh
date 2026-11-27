@@ -1,0 +1,62 @@
+[
+  {
+    "id": "eval_1",
+    "question": "How many days of paid sick leave do full-time WorkMesh employees receive per year?",
+    "context_chunks": [
+      {
+        "chunk_id": "chunk-hr-1",
+        "content": "Full-time employees at WorkMesh Technologies Pvt. Ltd. receive 12 paid sick leave days annually, accruing 1 day per month."
+      }
+    ],
+    "expected_answer": "Full-time WorkMesh employees receive 12 paid sick leave days per year.",
+    "expected_chunk_ids": ["chunk-hr-1"]
+  },
+  {
+    "id": "eval_2",
+    "question": "How many days per week can employees work remotely?",
+    "context_chunks": [
+      {
+        "chunk_id": "chunk-remote-1",
+        "content": "Under the Hybrid Work Policy, employees may work remotely up to 3 days per week with manager approval."
+      }
+    ],
+    "expected_answer": "Employees may work remotely up to 3 days per week with manager approval.",
+    "expected_chunk_ids": ["chunk-remote-1"]
+  },
+  {
+    "id": "eval_3",
+    "question": "Within how many days must business expense reports be submitted?",
+    "context_chunks": [
+      {
+        "chunk_id": "chunk-fin-1",
+        "content": "All travel and client expense reports must be submitted with itemized receipts within 14 calendar days of the expense date."
+      }
+    ],
+    "expected_answer": "Expense reports must be submitted with itemized receipts within 14 calendar days.",
+    "expected_chunk_ids": ["chunk-fin-1"]
+  },
+  {
+    "id": "eval_4",
+    "question": "Are employees allowed to send AI-drafted external emails without review?",
+    "context_chunks": [
+      {
+        "chunk_id": "chunk-sec-1",
+        "content": "WorkMesh AI enforces human-in-the-loop approval for all AI-generated email drafts; no email may be sent without explicit user confirmation."
+      }
+    ],
+    "expected_answer": "No. All AI-generated email drafts require explicit human-in-the-loop approval before sending.",
+    "expected_chunk_ids": ["chunk-sec-1"]
+  },
+  {
+    "id": "eval_5",
+    "question": "What file formats and maximum size are supported in the Document Hub?",
+    "context_chunks": [
+      {
+        "chunk_id": "chunk-doc-1",
+        "content": "The Document Hub supports PDF, DOCX, and TXT uploads up to 10 MB per file."
+      }
+    ],
+    "expected_answer": "The Document Hub supports PDF, DOCX, and TXT files up to 10 MB per file.",
+    "expected_chunk_ids": ["chunk-doc-1"]
+  }
+]
