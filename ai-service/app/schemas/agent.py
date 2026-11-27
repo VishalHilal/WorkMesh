@@ -31,6 +31,7 @@ class AgentRunData(BaseModel):
     pending_approval: bool = False
     approval_token: str | None = None
     draft_payload: dict[str, Any] | None = None
+    usage: dict[str, Any] | None = None
 
 
 class AgentRunResponse(BaseModel):
