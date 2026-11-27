@@ -10,6 +10,11 @@ from app.agents.nodes.human_approval import human_approval_node
 from app.agents.office_agent import office_agent_node
 from app.agents.state import AgentState
 from app.agents.supervisor import supervisor_node
+from app.services.guardrails import (
+    SAFE_REFUSAL_MESSAGE,
+    redact_sensitive_output,
+    validate_user_input,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -76,6 +81,24 @@ def run_agent_workflow(
     document_ids: list[str] | None = None,
 ) -> dict[str, Any]:
     """Execute the compiled agent graph with tenant-isolated initial state."""
+    guard = validate_user_input(query)
+    if not guard.allowed:
+        logger.warning(
+            "Agent input guardrail triggered for company '%s' (rule=%s)",
+            company_id,
+            guard.rule,
+        )
+        return {
+            "answer": SAFE_REFUSAL_MESSAGE,
+            "agent_handled": "supervisor",
+            "agent_path": ["guardrail"],
+            "citations": [],
+            "iterations": 0,
+            "pending_approval": False,
+            "approval_token": None,
+            "draft_payload": None,
+        }
+
     initial_state: AgentState = {
         "company_id": company_id,
         "query": query,
@@ -94,10 +117,17 @@ def run_agent_workflow(
 
     final_state = compiled_agent_graph.invoke(initial_state)
 
-    answer = (
+    raw_answer = (
         final_state.get("final_response")
         or "I was unable to synthesize a response for this request."
     )
+    answer, redacted_rules = redact_sensitive_output(raw_answer)
+    if redacted_rules:
+        logger.warning(
+            "Redacted sensitive output in agent response for company '%s' (rules=%s)",
+            company_id,
+            redacted_rules,
+        )
     agent_handled = final_state.get("current_agent") or "supervisor"
     agent_path = final_state.get("agent_path") or ["supervisor"]
     citations = final_state.get("citations") or []
