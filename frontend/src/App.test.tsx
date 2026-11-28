@@ -3,6 +3,7 @@ import App from './App'
 
 describe('Authentication & Protected Routes', () => {
   beforeEach(() => {
+    window.localStorage.clear()
     window.history.pushState({}, '', '/')
     vi.restoreAllMocks()
   })
