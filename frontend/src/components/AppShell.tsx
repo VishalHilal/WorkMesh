@@ -8,7 +8,6 @@ import {
   Users,
   ShieldCheck,
   Search,
-  Bell,
   HelpCircle,
   LogOut,
   Menu,
@@ -21,6 +20,7 @@ export type NavTab = 'workspace' | 'documents' | 'assistant' | 'reports' | 'dire
 
 interface AppShellProps {
   currentTab: NavTab
+  headerLeftSlot?: ReactNode
   children: ReactNode
 }
 
@@ -40,7 +40,7 @@ const QUICK_ACTIONS: QuickAction[] = [
   { label: 'Audit Logs', description: 'Inspect company security events', to: '/admin/audit-logs', adminOnly: true },
 ]
 
-export function AppShell({ currentTab, children }: AppShellProps) {
+export function AppShell({ currentTab, headerLeftSlot, children }: AppShellProps) {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
   const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN'
@@ -194,7 +194,7 @@ export function AppShell({ currentTab, children }: AppShellProps) {
   )
 
   return (
-    <div className="min-h-screen bg-[#f6f7fb] text-slate-900 flex font-sans overflow-x-hidden">
+    <div className="min-h-screen bg-[#f6f7fb] text-slate-900 flex font-sans overflow-x-clip">
       {/* Desktop Fixed Sidebar */}
       <aside className="hidden lg:block w-60 shrink-0 sticky top-0 h-screen">
         {sidebarContent}
@@ -222,19 +222,22 @@ export function AppShell({ currentTab, children }: AppShellProps) {
               type="button"
               onClick={() => setMobileNavOpen(true)}
               aria-label="Open navigation menu"
-              className="lg:hidden p-2 rounded-xl text-slate-600 hover:bg-slate-100 cursor-pointer"
+              className="lg:hidden p-2 rounded-xl text-slate-600 hover:bg-slate-100 cursor-pointer shrink-0"
             >
               <Menu className="w-5 h-5" />
             </button>
 
+            {headerLeftSlot}
+
             <button
               type="button"
               onClick={() => setSearchOpen(true)}
-              className="w-full flex items-center justify-between gap-2 px-3.5 py-2 rounded-full bg-[#f6f7fb] hover:bg-indigo-50/60 border border-slate-200/80 text-sm text-slate-500 transition-colors cursor-pointer"
+              className="w-full flex items-center justify-between gap-2 px-3 sm:px-3.5 py-2 rounded-full bg-[#f6f7fb] hover:bg-indigo-50/60 border border-slate-200/80 text-sm text-slate-500 transition-colors cursor-pointer min-w-0"
             >
               <span className="flex items-center gap-2 truncate">
                 <Search className="w-4 h-4 text-slate-400 shrink-0" />
-                <span className="truncate">Search anything...</span>
+                <span className="truncate sm:hidden">Search...</span>
+                <span className="truncate hidden sm:inline">Search anything...</span>
               </span>
               <kbd className="hidden sm:inline-block text-[11px] font-medium text-slate-400 bg-white px-1.5 py-0.5 rounded border border-slate-200">
                 ⌘K
@@ -243,18 +246,7 @@ export function AppShell({ currentTab, children }: AppShellProps) {
           </div>
 
           <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => navigate('/assistant')}
-              aria-label="Notifications"
-              title="Notifications"
-              className="relative p-2 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors cursor-pointer"
-            >
-              <Bell className="w-4 h-4" />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-white" />
-            </button>
-
-            <div className="flex items-center gap-2.5 pl-2 border-l border-slate-200">
+            <div className="flex items-center gap-2.5">
               <div
                 className="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center font-semibold text-xs shadow-2xs"
                 title={`${user?.firstName} ${user?.lastName}`}
