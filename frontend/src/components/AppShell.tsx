@@ -194,7 +194,7 @@ export function AppShell({ currentTab, children }: AppShellProps) {
   )
 
   return (
-    <div className="min-h-screen bg-[#f6f7fb] text-slate-900 flex font-sans">
+    <div className="min-h-screen bg-[#f6f7fb] text-slate-900 flex font-sans overflow-x-hidden">
       {/* Desktop Fixed Sidebar */}
       <aside className="hidden lg:block w-60 shrink-0 sticky top-0 h-screen">
         {sidebarContent}
