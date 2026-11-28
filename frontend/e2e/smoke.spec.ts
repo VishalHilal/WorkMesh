@@ -198,4 +198,19 @@ test.describe('WorkMesh Enterprise E2E Smoke Suite', () => {
     await expect(page.getByText('Q4 E2E Policy Brief', { exact: true })).toBeVisible()
     await expect(page.getByText(/generated successfully/i)).toBeVisible()
   })
+
+  test('renders mobile viewports (375px) without horizontal overflow across pages', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 })
+    await setupApiMocks(page)
+    await loginAsEmployee(page)
+
+    for (const path of ['/', '/documents', '/assistant', '/reports']) {
+      await page.goto(path)
+      await page.waitForLoadState('networkidle')
+      const hasOverflow = await page.evaluate(
+        () => document.documentElement.scrollWidth > window.innerWidth
+      )
+      expect(hasOverflow, `Horizontal overflow detected on ${path}`).toBe(false)
+    }
+  })
 })
