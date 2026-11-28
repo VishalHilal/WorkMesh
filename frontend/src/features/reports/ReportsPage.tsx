@@ -203,7 +203,7 @@ export function ReportsPage() {
               </p>
             </div>
           </div>
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/70 self-start sm:self-auto">
+          <span className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/70 self-start sm:self-auto">
             <Sparkles className="w-3.5 h-3.5" />
             Tenant-Scoped RAG Synthesis
           </span>

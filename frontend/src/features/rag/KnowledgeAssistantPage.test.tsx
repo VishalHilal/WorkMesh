@@ -360,7 +360,7 @@ describe('KnowledgeAssistantPage', () => {
     })
   })
 
-  it('resets conversation when clicking New Conversation button', async () => {
+  it('resets conversation when clicking New Chat button in sidebar', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn().mockImplementation(async (url: string) => {
@@ -397,7 +397,7 @@ describe('KnowledgeAssistantPage', () => {
       expect(screen.getByText('Answer 1')).toBeInTheDocument()
     })
 
-    const resetBtn = screen.getByRole('button', { name: /New Conversation/i })
+    const resetBtn = screen.getByRole('button', { name: /New Chat/i })
     fireEvent.click(resetBtn)
 
     // Conversation is cleared, back to welcome state
